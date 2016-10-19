@@ -57,7 +57,7 @@ func (a *Application) CreateWindow(w, h int, title string) (*Window, error) {
 		window: glfwWindow,
 	}
 
-	if err := window.loadShaders(); err != nil {
+	if err := window.glSetup(); err != nil {
 		return nil, err
 	}
 
@@ -67,6 +67,9 @@ func (a *Application) CreateWindow(w, h int, title string) (*Window, error) {
 }
 
 func (a *Application) Shutdown() {
+	for _, window := range a.windows {
+		window.Destroy()
+	}
 	glfw.Terminate()
 }
 
@@ -85,6 +88,8 @@ func (a *Application) Run() {
 			for _, window := range a.windows {
 				if !window.ShouldClose() {
 					keepedWindows = append(keepedWindows, window)
+				} else {
+					window.Destroy()
 				}
 			}
 			a.windows = keepedWindows
