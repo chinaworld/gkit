@@ -35,6 +35,9 @@ func loadShader(shaderType uint32, source string) (uint32, error) {
 	defer free()
 
 	shader := gl.CreateShader(shaderType)
+	if shader == 0 {
+		return 0, fmt.Errorf("Could not create shader.")
+	}
 	defer func() {
 		if !ok {
 			gl.DeleteShader(shader)
@@ -61,6 +64,9 @@ func loadShader(shaderType uint32, source string) (uint32, error) {
 func loadShaders() (uint32, error) {
 	ok := false
 	program := gl.CreateProgram()
+	if program == 0 {
+		return 0, fmt.Errorf("Could not create program.")
+	}
 	defer func() {
 		if !ok {
 			gl.DeleteProgram(program)

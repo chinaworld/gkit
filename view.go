@@ -12,6 +12,9 @@ type View struct {
 func (v *View) setupGl() bool {
 	ok := false
 	gl.GenVertexArrays(1, &v.vao)
+	if v.vao == 0 {
+		return false
+	}
 	defer func() {
 		if !ok {
 			gl.DeleteVertexArrays(1, &v.vao)
@@ -22,6 +25,9 @@ func (v *View) setupGl() bool {
 	defer gl.BindVertexArray(0)
 
 	gl.GenBuffers(1, &v.vbo)
+	if v.vbo == 0 {
+		return false
+	}
 	defer func() {
 		if !ok {
 			gl.DeleteBuffers(1, &v.vbo)
@@ -56,4 +62,15 @@ func (v *View) Draw() {
 }
 
 func (v *View) Destroy() {
+	if v.vao != 0 {
+		gl.BindVertexArray(v.vao)
+		if v.vbo != 0 {
+			gl.BindBuffer(gl.ARRAY_BUFFER, 0)
+			gl.DeleteBuffers(1, &v.vbo)
+			v.vbo = 0
+		}
+		gl.BindVertexArray(0)
+		gl.DeleteVertexArrays(1, &v.vao)
+		v.vao = 0
+	}
 }

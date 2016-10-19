@@ -25,6 +25,7 @@ func (w *Window) glSetup() error {
 
 func (w *Window) Destroy() {
 	w.window.MakeContextCurrent()
+	w.Root.Destroy()
 	gl.DeleteProgram(w.program)
 }
 
