@@ -15,6 +15,9 @@ type Window struct {
 func (w *Window) glSetup() error {
 	w.window.MakeContextCurrent()
 
+	gl.Enable(gl.DEPTH_TEST)
+	gl.DepthFunc(gl.LEQUAL)
+
 	painter, err := newGlPainter()
 	if err != nil {
 		return err
@@ -36,7 +39,7 @@ func (w *Window) Draw() {
 	width, height := uint32(viewportSize[2]), uint32(viewportSize[3])
 	w.Root.Width, w.Root.Height = width, height
 
-	gl.Clear(gl.COLOR_BUFFER_BIT)
+	gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 	defer w.window.SwapBuffers()
 
 	painter, endPaint := w.painter.BeginPaint()

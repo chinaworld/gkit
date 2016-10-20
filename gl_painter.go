@@ -85,18 +85,18 @@ const (
 const (
 	glPainterVertexShaderSource = `
 #version 140
-in uvec4 vPosition;
+in vec4 vPosition;
 
 uniform uvec4 viewportSize;
 uniform uvec4 viewOrigin;
 uniform uvec4 viewSize;
 
 void main() {
-  vec4 position = vec4(vPosition * viewSize + viewOrigin) * 2.0f / viewportSize - 1.0f;
+  vec4 position = (vPosition * viewSize + viewOrigin) * 2.0f / viewportSize - 1.0f;
   gl_Position = position * mat4(
       1.0, 0.0, 0.0, 0.0,
       0.0, -1.0, 0.0, 0.0,
-      0.0, 0.0, 1.0, 0.0,
+      0.0, 0.0, -1.0, 0.0,
       0.0, 0.0, 0.0, 1.0);
 }
 `
@@ -176,7 +176,7 @@ func newGlPainter() (*glPainter, error) {
 		}
 	}
 
-	rectVertices := []uint32{
+	rectVertices := []float32{
 		0, 0,
 		1, 0,
 		1, 1,
@@ -298,7 +298,7 @@ func (g *glPainter) drawRect(x, y, z, width, height uint32) {
 	if g.currentVBO != glPainterRectVBO {
 		gl.BindBuffer(gl.ARRAY_BUFFER, g.vbo[glPainterRectVBO])
 		g.currentVBO = glPainterRectVBO
-		gl.VertexAttribPointer(0, 2, gl.UNSIGNED_INT, false, 0, gl.Ptr(nil))
+		gl.VertexAttribPointer(0, 2, gl.FLOAT, false, 0, gl.Ptr(nil))
 		gl.EnableVertexAttribArray(0)
 	}
 
