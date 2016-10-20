@@ -92,7 +92,12 @@ uniform uvec4 viewOrigin;
 uniform uvec4 viewSize;
 
 void main() {
-  gl_Position = vec4(vPosition * viewSize + viewOrigin) * 2.0f / viewportSize - 1.0f;
+  vec4 position = vec4(vPosition * viewSize + viewOrigin) * 2.0f / viewportSize - 1.0f;
+  gl_Position = position * mat4(
+      1.0, 0.0, 0.0, 0.0,
+      0.0, -1.0, 0.0, 0.0,
+      0.0, 0.0, 1.0, 0.0,
+      0.0, 0.0, 0.0, 1.0);
 }
 `
 	glPainterFragmentShaderSource = `
