@@ -47,7 +47,8 @@ func (a *Application) CreateWindow(w, h int, title string) (*Window, error) {
 	}()
 	if !a.glInited {
 		glfwWindow.MakeContextCurrent()
-		if err := gl.Init(); err != nil {
+		err = gl.Init()
+		if err != nil {
 			return nil, err
 		}
 		a.glInited = true
@@ -57,13 +58,14 @@ func (a *Application) CreateWindow(w, h int, title string) (*Window, error) {
 		window: glfwWindow,
 	}
 
-	if err := window.glSetup(); err != nil {
+	err = window.glSetup()
+	if err != nil {
 		return nil, err
 	}
 
 	ok = true
 	a.windows = append(a.windows, window)
-	return window, err
+	return window, nil
 }
 
 func (a *Application) Shutdown() {

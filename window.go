@@ -7,37 +7,42 @@ import (
 
 type Window struct {
 	window  *glfw.Window
-	program uint32
+	painter *glPainter
 
 	Root View
 }
 
 func (w *Window) glSetup() error {
 	w.window.MakeContextCurrent()
-	program, err := loadShaders()
+
+	painter, err := newGlPainter()
 	if err != nil {
 		return err
 	}
-	w.program = program
+	w.painter = painter
 
 	return nil
 }
 
 func (w *Window) Destroy() {
 	w.window.MakeContextCurrent()
-	w.Root.Destroy()
-	gl.DeleteProgram(w.program)
+	w.painter.Destroy()
 }
 
 func (w *Window) Draw() {
 	w.window.MakeContextCurrent()
-	gl.UseProgram(w.program)
-	defer gl.UseProgram(0)
-
-	gl.EnableVertexAttribArray(0)
+	viewportSize := make([]int32, 4)
+	gl.GetIntegerv(gl.VIEWPORT, &viewportSize[0])
+	width, height := uint32(viewportSize[2]), uint32(viewportSize[3])
+	w.Root.Width, w.Root.Height = width, height
 
 	gl.Clear(gl.COLOR_BUFFER_BIT)
-	w.Root.Draw()
+	defer w.window.SwapBuffers()
+
+	painter, endPaint := w.painter.BeginPaint()
+	defer endPaint()
+
+	w.Root.Draw(painter)
 }
 
 func (w *Window) Maximize() error {
