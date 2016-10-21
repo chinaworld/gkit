@@ -78,9 +78,6 @@ func (a *Application) Shutdown() {
 func (a *Application) Run() {
 	for len(a.windows) > 0 {
 		glfw.PollEvents()
-		for _, window := range a.windows {
-			window.Draw()
-		}
 		shouldCleanUp := false
 		for _, window := range a.windows {
 			shouldCleanUp = shouldCleanUp || window.ShouldClose()
@@ -95,6 +92,27 @@ func (a *Application) Run() {
 				}
 			}
 			a.windows = keepedWindows
+		}
+
+		complete := make(chan *Window)
+		for _, window := range a.windows {
+			window.UpdateSize()
+			go func(window *Window) {
+				window.Layout()
+				complete <- window
+			}(window)
+		}
+
+		drawQueue := make(chan *Window)
+		go func() {
+			defer close(complete)
+			defer close(drawQueue)
+			for range a.windows {
+				drawQueue <- <-complete
+			}
+		}()
+		for window := range drawQueue {
+			window.Draw()
 		}
 	}
 }

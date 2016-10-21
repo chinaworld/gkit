@@ -32,13 +32,15 @@ func (w *Window) Destroy() {
 	w.painter.Destroy()
 }
 
-func (w *Window) Draw() {
-	w.window.MakeContextCurrent()
+func (w *Window) UpdateSize() {
 	viewportSize := make([]int32, 4)
 	gl.GetIntegerv(gl.VIEWPORT, &viewportSize[0])
 	width, height := uint32(viewportSize[2]), uint32(viewportSize[3])
-	w.Root.Width, w.Root.Height = width, height
+	w.Root.Frame.Width, w.Root.Frame.Height = width, height
+}
 
+func (w *Window) Draw() {
+	w.window.MakeContextCurrent()
 	gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 	defer w.window.SwapBuffers()
 
@@ -54,4 +56,8 @@ func (w *Window) Maximize() error {
 
 func (w *Window) ShouldClose() bool {
 	return w.window.ShouldClose()
+}
+
+func (w *Window) Layout() {
+	w.Root.DoLayout()
 }
