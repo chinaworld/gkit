@@ -9,6 +9,8 @@ type Window struct {
 	window  *glfw.Window
 	painter *glPainter
 
+	Size Size
+
 	Root View
 }
 
@@ -35,8 +37,7 @@ func (w *Window) Destroy() {
 func (w *Window) UpdateSize() {
 	viewportSize := make([]int32, 4)
 	gl.GetIntegerv(gl.VIEWPORT, &viewportSize[0])
-	width, height := uint32(viewportSize[2]), uint32(viewportSize[3])
-	w.Root.Frame.Width, w.Root.Frame.Height = width, height
+	w.Size.Width, w.Size.Height = uint32(viewportSize[2]), uint32(viewportSize[3])
 }
 
 func (w *Window) Draw() {
@@ -59,5 +60,5 @@ func (w *Window) ShouldClose() bool {
 }
 
 func (w *Window) Layout() {
-	w.Root.DoLayout()
+	w.Root.Layouter().Layout(Rect{0, 0, w.Size.Width, w.Size.Height})
 }

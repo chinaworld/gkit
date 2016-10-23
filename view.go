@@ -1,5 +1,15 @@
 package gkit
 
+type Layouter interface {
+	MinSize() Size
+	PrefSize() Size
+	MaxSize() Size
+
+	HeightForWidth(uint32) uint32
+
+	Layout(Rect)
+}
+
 type View struct {
 	Background Color
 
@@ -7,8 +17,11 @@ type View struct {
 
 	children []*View
 
-	LayoutStrategy LayoutStrategy
-	LayoutSettings LayoutSettings
+	MinSize        Size
+	MaxSize        Size
+	PrefSize       Size
+	HeightForWidth func(*View, uint32) uint32
+	Layout         func(*View, Rect, []Layouter)
 }
 
 func (v *View) AddChild(view *View) {
@@ -41,64 +54,40 @@ func (v *View) Draw(p Painter) {
 	}
 }
 
-func (v *View) DoLayout() {
-	newViewLayout(v).Layout(v.Frame)
+func (v *View) Layouter() Layouter {
+	return viewLayouter{v}
 }
 
-func newViewLayout(v *View) SubLayouter {
-	strategy := v.LayoutStrategy
-	if strategy == nil {
-		strategy = NoneStrategy
-	}
-	children := make([]SubLayouter, 0, len(v.children))
-	for _, child := range v.children {
-		children = append(children, newViewLayout(child))
-	}
-	return &viewLayout{
-		Strategy:       strategy,
-		settings:       v.LayoutSettings,
-		children:       children,
-		heightForWidth: make(map[uint32]uint32),
-		frame:          &v.Frame,
+type viewLayouter struct{ *View }
+
+var _ Layouter = viewLayouter{}
+
+func (v viewLayouter) Layout(frame Rect) {
+	v.Frame = frame
+	if v.View.Layout != nil {
+		layouters := make([]Layouter, 0, len(v.View.children))
+		for _, child := range v.View.children {
+			layouters = append(layouters, child.Layouter())
+		}
+		v.View.Layout(v.View, Rect{0, 0, frame.Width, frame.Height}, layouters)
 	}
 }
 
-type viewLayout struct {
-	Strategy LayoutStrategy
-	settings LayoutSettings
-	children []SubLayouter
-
-	preferredSize  *Size
-	heightForWidth map[uint32]uint32
-
-	frame *Rect
+func (v viewLayouter) MaxSize() Size {
+	return v.View.MaxSize
 }
 
-var _ SubLayouter = &viewLayout{}
-
-func (l *viewLayout) Settings() LayoutSettings {
-	return l.settings
+func (v viewLayouter) MinSize() Size {
+	return v.View.MinSize
 }
 
-func (l *viewLayout) PreferedSize() Size {
-	if l.preferredSize == nil {
-		size := l.Strategy.PreferedSize(l.settings, l.children...)
-		l.preferredSize = &size
+func (v viewLayouter) PrefSize() Size {
+	return v.View.PrefSize
+}
+
+func (v viewLayouter) HeightForWidth(width uint32) uint32 {
+	if v.View.HeightForWidth != nil {
+		return v.View.HeightForWidth(v.View, width)
 	}
-	return *l.preferredSize
-}
-
-func (l *viewLayout) HeightForWidth(width uint32) uint32 {
-	if _, ok := l.heightForWidth[width]; !ok {
-		l.heightForWidth[width] = l.Strategy.HeightForWidth(l.settings, width, l.children...)
-	}
-	return l.heightForWidth[width]
-}
-
-func (l *viewLayout) Layout(frame Rect) {
-	*l.frame = frame
-	l.Strategy.Layout(l.settings, Size{
-		Width:  frame.Width,
-		Height: frame.Height,
-	}, l.children...)
+	return 0
 }
