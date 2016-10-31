@@ -1,69 +1,23 @@
 package gkit
 
-import (
-	"github.com/go-gl/gl/v3.2-core/gl"
-	"github.com/go-gl/glfw/v3.2/glfw"
-)
-
 type Application struct {
-	windows  []*Window
-	glInited bool
+	windows      []Window
+	glInited     bool
+	windowSystem WindowSystem
 }
 
-func NewApplication() (*Application, error) {
-	ok := false
-	err := glfw.Init()
-	if err != nil {
-		return nil, err
-	}
-	defer func() {
-		if !ok {
-			glfw.Terminate()
-		}
-	}()
-
-	glfw.WindowHint(glfw.Resizable, glfw.True)
-	glfw.WindowHint(glfw.ContextVersionMajor, 3)
-	glfw.WindowHint(glfw.ContextVersionMinor, 2)
-	glfw.WindowHint(glfw.OpenGLProfile, glfw.OpenGLCoreProfile)
-	glfw.WindowHint(glfw.OpenGLForwardCompatible, glfw.True)
-
-	ok = true
+func NewApplication(windowSystem WindowSystem) (*Application, error) {
 	return &Application{
-		windows: make([]*Window, 0),
+		windows:      make([]Window, 0),
+		windowSystem: windowSystem,
 	}, nil
 }
 
-func (a *Application) CreateWindow(w, h int, title string) (*Window, error) {
-	ok := false
-	glfwWindow, err := glfw.CreateWindow(w, h, title, nil, nil)
+func (a *Application) CreateWindow(w, h int, title string) (Window, error) {
+	window, err := a.windowSystem.Create(uint32(w), uint32(h), title)
 	if err != nil {
 		return nil, err
 	}
-	defer func() {
-		if !ok {
-			glfwWindow.Destroy()
-		}
-	}()
-	if !a.glInited {
-		glfwWindow.MakeContextCurrent()
-		err = gl.Init()
-		if err != nil {
-			return nil, err
-		}
-		a.glInited = true
-	}
-
-	window := &Window{
-		window: glfwWindow,
-	}
-
-	err = window.glSetup()
-	if err != nil {
-		return nil, err
-	}
-
-	ok = true
 	a.windows = append(a.windows, window)
 	return window, nil
 }
@@ -72,18 +26,18 @@ func (a *Application) Shutdown() {
 	for _, window := range a.windows {
 		window.Destroy()
 	}
-	glfw.Terminate()
+	a.windowSystem.Terminate()
 }
 
 func (a *Application) Run() {
 	for len(a.windows) > 0 {
-		glfw.PollEvents()
+		a.windowSystem.PollEvents()
 		shouldCleanUp := false
 		for _, window := range a.windows {
 			shouldCleanUp = shouldCleanUp || window.ShouldClose()
 		}
 		if shouldCleanUp {
-			keepedWindows := make([]*Window, 0, len(a.windows)-1)
+			keepedWindows := make([]Window, 0, len(a.windows)-1)
 			for _, window := range a.windows {
 				if !window.ShouldClose() {
 					keepedWindows = append(keepedWindows, window)
@@ -94,25 +48,32 @@ func (a *Application) Run() {
 			a.windows = keepedWindows
 		}
 
-		complete := make(chan *Window)
+		drawQueue := make(chan struct {
+			drawingContext DrawingContext
+			painter        Painter
+		})
 		for _, window := range a.windows {
 			window.UpdateSize()
-			go func(window *Window) {
+			go func(window Window) {
 				window.Layout()
-				complete <- window
+				painter := window.BeginPaint()
+				window.Root().draw(painter)
+				drawQueue <- struct {
+					drawingContext DrawingContext
+					painter        Painter
+				}{
+					drawingContext: window,
+					painter:        painter,
+				}
 			}(window)
 		}
 
-		drawQueue := make(chan *Window)
-		go func() {
-			defer close(complete)
-			defer close(drawQueue)
-			for range a.windows {
-				drawQueue <- <-complete
-			}
-		}()
-		for window := range drawQueue {
-			window.Draw()
+		for range a.windows {
+			drawEntry := <-drawQueue
+			context := drawEntry.drawingContext
+			painter := drawEntry.painter
+			context.EndPaint(painter)
 		}
+		close(drawQueue)
 	}
 }

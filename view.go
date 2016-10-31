@@ -22,6 +22,7 @@ type View struct {
 	PrefSize       Size
 	HeightForWidth func(*View, uint32) uint32
 	Layout         func(*View, Rect, []Layouter)
+	Draw           func(*View, Painter)
 }
 
 func (v *View) AddChild(view *View) {
@@ -45,12 +46,16 @@ func (v *View) DeleteChild(view *View) {
 	}
 }
 
-func (v *View) Draw(p Painter) {
+func (v *View) draw(p Painter) {
 	p.SetColor(v.Background)
 	p.DrawRect(0, 0, v.Frame.Width, v.Frame.Height)
 
 	for _, child := range v.children {
-		child.Draw(p.SubPainter(child.Frame.X, child.Frame.Y, child.Frame.Width, child.Frame.Height))
+		child.draw(p.SubPainter(child.Frame.X, child.Frame.Y, child.Frame.Width, child.Frame.Height))
+	}
+
+	if v.Draw != nil {
+		v.Draw(v, p.SubPainter(0, 0, v.Frame.Width, v.Frame.Height))
 	}
 }
 
