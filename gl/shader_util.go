@@ -17,6 +17,8 @@ var (
 	glPainterGenVBOError              = compileError("Failed to create Vertex Buffers.")
 	createShaderError                 = compileError("Failed to create Shader.")
 	glPainterCreateProgramError       = compileError("Failed to create Program.")
+	glPainterGenTextureError          = compileError("Failed to create Texture.")
+	glPainterGenSamplerError          = compileError("Failed to create Sampler.")
 )
 
 func glPainterGetUniformLocationError(name string) error {

@@ -1,11 +1,14 @@
 package gkit
 
 import (
-	"golang.org/x/image/font"
-	"golang.org/x/image/math/fixed"
 	"image"
+	"image/color"
+	"image/draw"
 	"io/ioutil"
 	"os"
+
+	"golang.org/x/image/font"
+	"golang.org/x/image/math/fixed"
 
 	"github.com/golang/freetype"
 	"github.com/golang/freetype/truetype"
@@ -40,30 +43,38 @@ func LoadFont(data []byte) (*Font, error) {
 	}, nil
 }
 
-func (f *Font) DrawString(size uint32, text string) *image.Gray {
+func (f *Font) drawer(size uint32) font.Drawer {
 	options := truetype.Options{
 		Size: float64(size),
 		DPI:  0, // Fuck imperial system. 1pt = 1px now.
 	}
 	face := truetype.NewFace(f.font, &options)
-	drawer := font.Drawer{
+	return font.Drawer{
 		Face: face,
 	}
-	metrics := face.Metrics()
-	advance := drawer.MeasureString(text)
+}
 
+func (f *Font) StringSize(size uint32, text string) Size {
+	drawer := f.drawer(size)
+	metrics := drawer.Face.Metrics()
+	advance := drawer.MeasureString(text)
 	height := metrics.Height.Ceil()
 	width := advance.Ceil()
+	return Size{
+		Width:  uint32(width),
+		Height: uint32(height),
+	}
+}
 
-	dst := image.NewGray(image.Rectangle{
-		Min: image.Point{0, 0},
-		Max: image.Point{width, height},
-	})
+func (f *Font) DrawString(size uint32, text string, dst draw.Image) {
+	drawer := f.drawer(size)
+	metrics := drawer.Face.Metrics()
 
 	drawer.Dst = dst
-	drawer.Src = dst
-	drawer.Dot = fixed.Point26_6{0, metrics.Ascent}
+	drawer.Src = image.NewUniform(color.Gray{0xff})
+	drawer.Dot = fixed.Point26_6{
+		X: fixed.I(dst.Bounds().Min.X),
+		Y: fixed.I(dst.Bounds().Min.Y) + metrics.Ascent,
+	}
 	drawer.DrawString(text)
-
-	return dst
 }
