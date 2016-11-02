@@ -11,5 +11,6 @@ func LoadPng(filename string) (image.Image, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer file.Close()
 	return png.Decode(file)
 }

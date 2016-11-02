@@ -48,12 +48,13 @@ uniform sampler2DArray images;
 
 void main() {
   vec2 uv = vUV / maskSize;
-  if (texture(mask, uv).r == 0) {
-    discard;
-  } else if (vImageUV.z < 0) {
-    fColor = vColor;
-  } else {
+  fColor = vColor;
+  if (vImageUV.z >= 0) {
     fColor = texture(images, vec3(vImageUV));
+  }
+  fColor.a *= texture(mask, uv).r;
+  if (fColor.a == 0) {
+    discard;
   }
 }
 `

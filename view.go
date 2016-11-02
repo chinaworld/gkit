@@ -23,6 +23,7 @@ type View struct {
 	HeightForWidth func(*View, uint32) uint32
 	Layout         func(*View, Rect, []Layouter)
 	Draw           func(*View, Painter)
+	Update         func(*View)
 }
 
 func (v *View) AddChild(view *View) {
@@ -95,4 +96,13 @@ func (v viewLayouter) HeightForWidth(width uint32) uint32 {
 		return v.View.HeightForWidth(v.View, width)
 	}
 	return 0
+}
+
+func (v *View) update() {
+	if v.Update != nil {
+		v.Update(v)
+	}
+	for _, child := range v.children {
+		child.update()
+	}
 }

@@ -55,6 +55,7 @@ func (a *Application) Run() {
 		for _, window := range a.windows {
 			window.UpdateSize()
 			go func(window Window) {
+				window.Root().update()
 				window.Layout()
 				painter := window.BeginPaint()
 				window.Root().draw(painter)
