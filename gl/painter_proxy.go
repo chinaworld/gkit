@@ -1,6 +1,8 @@
 package gl
 
 import (
+	"image"
+
 	"github.com/alex-ac/gkit"
 )
 
@@ -62,5 +64,17 @@ func (p *painterProxy) DrawText(x, y uint32, text string) {
 	p.drawText(x, y, 0, text)
 }
 func (p *painterProxy) drawText(x, y, z uint32, text string) {
+	x, y, _, _ = normalizeCoords(
+		x, y, 0, 0, p.width, p.height)
 	p.impl.drawText(x+p.x, y+p.y, z+1, text)
+}
+
+func (p *painterProxy) DrawImage(x, y, width, height uint32, image image.Image) {
+	p.drawImage(x, y, 0, width, height, image)
+}
+
+func (p *painterProxy) drawImage(x, y, z, width, height uint32, image image.Image) {
+	x, y, width, height = normalizeCoords(
+		x, y, width, height, p.width, p.height)
+	p.impl.drawImage(x+p.x, y+p.y, z+1, width, height, image)
 }

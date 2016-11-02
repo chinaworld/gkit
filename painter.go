@@ -1,5 +1,9 @@
 package gkit
 
+import (
+	"image"
+)
+
 type DrawingContext interface {
 	BeginPaint() Painter
 	EndPaint(painter Painter)
@@ -12,4 +16,5 @@ type Painter interface {
 	SetFont(f *Font)
 	SetFontSize(size uint32)
 	DrawText(x, y uint32, text string)
+	DrawImage(x, y, width, height uint32, image image.Image)
 }

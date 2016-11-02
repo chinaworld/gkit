@@ -1,6 +1,8 @@
 package gl
 
 import (
+	"image"
+
 	"github.com/go-gl/gl/v3.2-core/gl"
 
 	"github.com/alex-ac/gkit"
@@ -12,8 +14,10 @@ const (
 layout(location = 0) in vec4 vPosition;
 layout(location = 1) in vec4 vColorIn;
 layout(location = 2) in vec2 vUVIn;
+layout(location = 3) in vec3 vImageUVIn;
 out vec4 vColor;
 out vec2 vUV;
+out vec3 vImageUV;
 
 uniform uvec4 viewportSize;
 
@@ -26,6 +30,7 @@ void main() {
       0.0, 0.0, 0.0, 1.0);
   vColor = vColorIn;
   vUV = vUVIn;
+  vImageUV = vImageUVIn;
 }
 `
 	glPainterFragmentShaderSource = `
@@ -33,18 +38,22 @@ void main() {
 
 in vec4 vColor;
 in vec2 vUV;
+in vec3 vImageUV;
 
 out vec4 fColor;
 
 uniform uvec2 maskSize;
 uniform sampler2D mask;
+uniform sampler2DArray images;
 
 void main() {
   vec2 uv = vUV / maskSize;
   if (texture(mask, uv).r == 0) {
     discard;
-  } else {
+  } else if (vImageUV.z < 0) {
     fColor = vColor;
+  } else {
+    fColor = texture(images, vec3(vImageUV));
   }
 }
 `
@@ -54,18 +63,23 @@ const (
 	attrCoords uint32 = iota
 	attrColors
 	attrUv
+	attrImageUv
 
-	attrFloatSize    = 4
-	attrCoordsCount  = 3
-	attrCoordsOffset = 0
-	attrCoordsSize   = attrCoordsCount * attrFloatSize
-	attrColorsCount  = 4
-	attrColorOffset  = attrCoordsOffset + attrCoordsSize
-	attrColorSize    = attrColorsCount * attrFloatSize
-	attrUvCount      = 2
-	attrUvOffset     = attrColorOffset + attrColorSize
-	attrUvSize       = attrUvCount * attrFloatSize
-	attrStride       = attrUvOffset + attrUvSize
+	attrFloatSize     = 4
+	attrCoordsCount   = 3
+	attrCoordsOffset  = 0
+	attrCoordsSize    = attrCoordsCount * attrFloatSize
+	attrColorsCount   = 4
+	attrColorOffset   = attrCoordsOffset + attrCoordsSize
+	attrColorSize     = attrColorsCount * attrFloatSize
+	attrUvCount       = 2
+	attrUvOffset      = attrColorOffset + attrColorSize
+	attrUvSize        = attrUvCount * attrFloatSize
+	attrImageUvCount  = 3
+	attrImageUvOffset = attrUvOffset + attrUvSize
+	attrImageUvSize   = attrImageUvCount * attrFloatSize
+
+	attrStride = attrImageUvOffset + attrImageUvSize
 )
 
 type drawingContext struct {
@@ -77,9 +91,12 @@ type drawingContext struct {
 	viewportSizeLocation int32
 	maskLocation         int32
 	maskSizeLocation     int32
+	imagesLocation       int32
 
-	texture uint32
-	sampler uint32
+	texture      uint32
+	textureArray uint32
+	sampler      uint32
+	samplerArray uint32
 }
 
 func newDrawingContext() (*drawingContext, error) {
@@ -148,31 +165,42 @@ func newDrawingContext() (*drawingContext, error) {
 		return nil, glPainterGetUniformLocationError("maskSize")
 	}
 
-	var texture uint32
-	gl.GenTextures(1, &texture)
-	if texture == 0 {
-		return nil, glPainterGenTextureError
+	imagesLocation := gl.GetUniformLocation(program, gl.Str("images\x00"))
+	if imagesLocation < 0 {
+		return nil, glPainterGetUniformLocationError("images")
+	}
+
+	var textures [2]uint32
+	gl.GenTextures(int32(len(textures)), &textures[0])
+	for _, texture := range textures {
+		if texture == 0 {
+			return nil, glPainterGenTextureError
+		}
 	}
 	defer func() {
 		if !ok {
-			gl.DeleteTextures(1, &texture)
+			gl.DeleteTextures(int32(len(textures)), &textures[0])
 		}
 	}()
 
-	var sampler uint32
-	gl.GenSamplers(1, &sampler)
-	if sampler == 0 {
-		return nil, glPainterGenSamplerError
+	var samplers [2]uint32
+	gl.GenSamplers(int32(len(samplers)), &samplers[0])
+	for _, sampler := range samplers {
+		if sampler == 0 {
+			return nil, glPainterGenSamplerError
+		}
 	}
 	defer func() {
 		if !ok {
-			gl.DeleteSamplers(1, &sampler)
+			gl.DeleteSamplers(int32(len(samplers)), &samplers[0])
 		}
 	}()
+	sampler := samplers[0]
 	gl.SamplerParameteri(sampler, gl.TEXTURE_MIN_FILTER, gl.NEAREST)
 	gl.SamplerParameteri(sampler, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
-	gl.SamplerParameteri(sampler, gl.TEXTURE_WRAP_S, gl.REPEAT)
-	gl.SamplerParameteri(sampler, gl.TEXTURE_WRAP_T, gl.REPEAT)
+	arraySampler := samplers[1]
+	gl.SamplerParameteri(arraySampler, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
+	gl.SamplerParameteri(arraySampler, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
 
 	ok = true
 	return &drawingContext{
@@ -182,15 +210,26 @@ func newDrawingContext() (*drawingContext, error) {
 		viewportSizeLocation: viewportSizeLocation,
 		maskLocation:         maskLocation,
 		maskSizeLocation:     maskSizeLocation,
-		texture:              texture,
+		imagesLocation:       imagesLocation,
+		texture:              textures[0],
+		textureArray:         textures[1],
 		sampler:              sampler,
+		samplerArray:         arraySampler,
 	}, nil
 }
 
 func (g *drawingContext) Destroy() {
 	gl.BindVertexArray(g.vao)
-	gl.DeleteSamplers(1, &g.sampler)
-	gl.DeleteTextures(1, &g.texture)
+	textures := []uint32{
+		g.texture,
+		g.textureArray,
+	}
+	samplers := []uint32{
+		g.sampler,
+		g.samplerArray,
+	}
+	gl.DeleteSamplers(int32(len(samplers)), &samplers[0])
+	gl.DeleteTextures(int32(len(textures)), &textures[0])
 	gl.BindBuffer(gl.ARRAY_BUFFER, 0)
 	gl.DeleteBuffers(1, &g.vbo)
 	gl.BindVertexArray(0)
@@ -215,14 +254,17 @@ func textureSideSize(w, h uint32) uint32 {
 
 func (g *drawingContext) BeginPaint(width, height uint32) gkit.Painter {
 	maskSideSize := textureSideSize(width, height)
-	mask := newBitmap8bpp(int(maskSideSize), int(maskSideSize))
-	mask.data[0] = 0xff
+	mask := image.NewGray(image.Rectangle{
+		Max: image.Point{int(maskSideSize), int(maskSideSize)},
+	})
+	mask.Pix[0] = 0xff
 	return &painter{
 		context:  g,
 		mask:     mask,
+		images:   make([]*image.RGBA, 0),
 		width:    width,
 		height:   height,
-		vertices: make([]float32, 0, 6),
+		vertices: make([]float32, 0),
 	}
 }
 
@@ -250,22 +292,43 @@ func (g *drawingContext) EndPaint(gkitPainter gkit.Painter) {
 		attrColors, attrColorsCount, gl.FLOAT, false, attrStride, gl.PtrOffset(attrColorOffset))
 	gl.VertexAttribPointer(
 		attrUv, attrUvCount, gl.FLOAT, false, attrStride, gl.PtrOffset(attrUvOffset))
+	gl.VertexAttribPointer(
+		attrImageUv, attrImageUvCount, gl.FLOAT, false, attrStride, gl.PtrOffset(attrImageUvOffset))
 	gl.EnableVertexAttribArray(attrCoords)
 	gl.EnableVertexAttribArray(attrColors)
 	gl.EnableVertexAttribArray(attrUv)
+	gl.EnableVertexAttribArray(attrImageUv)
 
 	gl.Uniform1i(g.maskLocation, 0)
 
 	gl.ActiveTexture(gl.TEXTURE0)
 
 	gl.BindTexture(gl.TEXTURE_2D, g.texture)
-	defer gl.BindTexture(gl.TEXTURE_2D, 0)
 	gl.TexImage2D(
 		gl.TEXTURE_2D, 0, gl.RED, int32(p.mask.Rect.Max.X), int32(p.mask.Rect.Max.Y), 0,
-		gl.RED, gl.UNSIGNED_BYTE, gl.Ptr(p.mask.data))
+		gl.RED, gl.UNSIGNED_BYTE, gl.Ptr(p.mask.Pix))
 
 	gl.BindSampler(0, g.sampler)
 	defer gl.BindSampler(0, 0)
+
+	gl.Uniform1i(g.imagesLocation, 1)
+	gl.ActiveTexture(gl.TEXTURE1)
+	gl.BindTexture(gl.TEXTURE_2D_ARRAY, g.textureArray)
+	var images []uint8
+	for _, image := range p.images {
+		if images == nil {
+			images = image.Pix
+		} else {
+			images = append(images, image.Pix...)
+		}
+	}
+	gl.TexImage3D(
+		gl.TEXTURE_2D_ARRAY, 0, gl.RGBA,
+		int32(p.mask.Rect.Max.X), int32(p.mask.Rect.Max.Y), int32(len(p.images)), 0,
+		gl.RGBA, gl.UNSIGNED_INT_8_8_8_8_REV, gl.Ptr(images))
+
+	gl.BindSampler(1, g.samplerArray)
+	defer gl.BindSampler(1, 0)
 
 	gl.Uniform2ui(g.maskSizeLocation, uint32(p.mask.Rect.Max.X), uint32(p.mask.Rect.Max.Y))
 
