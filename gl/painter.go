@@ -1,8 +1,6 @@
 package gl
 
 import (
-	"image"
-
 	"github.com/alex-ac/gkit"
 )
 
@@ -36,7 +34,7 @@ type painter struct {
 	width   uint32
 	height  uint32
 
-	mask *image.Gray
+	mask *bitmap8bpp
 
 	vertices     []float32
 	currentColor [4]float32
@@ -78,16 +76,16 @@ func (p *painter) DrawRect(x, y, width, height uint32) {
 }
 
 func (p *painter) drawRect(x, y, z, width, height uint32) {
-	left, top, right, bottom, Z := float32(x), float32(y), float32(width), float32(height), float32(z)
+	left, top, right, bottom, Z := float32(x), float32(y), float32(x+width), float32(y+height), float32(z)
 	R, G, B, A := p.currentColor[0], p.currentColor[1], p.currentColor[2], p.currentColor[3]
-	// U, V := float32(0), float32(0)
+	U, V := float32(0), float32(0)
 	p.vertices = append(p.vertices,
-		left, top, Z, R, G, B, A, left, top,
-		right, top, Z, R, G, B, A, right, top,
-		left, bottom, Z, R, G, B, A, left, bottom,
-		right, top, Z, R, G, B, A, right, top,
-		right, bottom, Z, R, G, B, A, right, bottom,
-		left, bottom, Z, R, G, B, A, left, bottom,
+		left, top, Z, R, G, B, A, U, V,
+		right, top, Z, R, G, B, A, U, V,
+		left, bottom, Z, R, G, B, A, U, V,
+		right, top, Z, R, G, B, A, U, V,
+		right, bottom, Z, R, G, B, A, U, V,
+		left, bottom, Z, R, G, B, A, U, V,
 	)
 }
 
@@ -113,22 +111,9 @@ func (p *painter) DrawText(x, y uint32, text string) {
 
 func (p *painter) drawText(x, y, z uint32, text string) {
 	size := p.currentFont.StringSize(p.currentFontSize, text)
-	mask := p.mask.SubImage(image.Rectangle{
-		Min: image.Point{int(x), int(y)},
-		Max: image.Point{int(x + size.Width), int(y + size.Height)},
-	}).(*image.Gray)
-	p.currentFont.DrawString(p.currentFontSize, text, mask)
-	count := 0
-	for x := p.mask.Rect.Min.X; x < p.mask.Rect.Max.X; x++ {
-		for y := p.mask.Rect.Min.X; y < p.mask.Rect.Max.Y; y++ {
-			if p.mask.Pix[p.mask.PixOffset(x, y)] != 0 {
-				count++
-			}
-		}
-	}
-	print(count, "\n")
+	p.currentFont.DrawString(p.currentFontSize, text, x, y, p.mask)
 
-	left, top, right, bottom, Z := float32(x), float32(y), float32(size.Width), float32(size.Height), float32(z)
+	left, top, right, bottom, Z := float32(x), float32(y), float32(x+size.Width), float32(x+size.Height), float32(z)
 	R, G, B, A := p.currentColor[0], p.currentColor[1], p.currentColor[2], p.currentColor[3]
 	p.vertices = append(p.vertices,
 		left, top, Z, R, G, B, A, left, top,

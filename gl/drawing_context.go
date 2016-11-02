@@ -1,9 +1,6 @@
 package gl
 
 import (
-	"image"
-	"image/color"
-
 	"github.com/go-gl/gl/v3.2-core/gl"
 
 	"github.com/alex-ac/gkit"
@@ -43,17 +40,11 @@ uniform uvec2 maskSize;
 uniform sampler2D mask;
 
 void main() {
-  mat3 translate = mat3(
-    1.0, 0.0, 0.0,
-    0.0, -1.0, 1.0,
-    0.0, 0.0, 1.0);
-  vec2 uv = (vec3(vUV / maskSize, 1.0) * translate).xy;
-  if (uv.x > 0 && uv.x < 1 && uv.y > 0 && uv.y < 1) {
-    // discard;
-    fColor = texture(mask, uv);
+  vec2 uv = vUV / maskSize;
+  if (texture(mask, uv).r == 0) {
+    discard;
   } else {
-    vec4 color = vColor;
-    fColor = color;
+    fColor = vColor;
   }
 }
 `
@@ -178,6 +169,10 @@ func newDrawingContext() (*drawingContext, error) {
 			gl.DeleteSamplers(1, &sampler)
 		}
 	}()
+	gl.SamplerParameteri(sampler, gl.TEXTURE_MIN_FILTER, gl.NEAREST)
+	gl.SamplerParameteri(sampler, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
+	gl.SamplerParameteri(sampler, gl.TEXTURE_WRAP_S, gl.REPEAT)
+	gl.SamplerParameteri(sampler, gl.TEXTURE_WRAP_T, gl.REPEAT)
 
 	ok = true
 	return &drawingContext{
@@ -220,14 +215,8 @@ func textureSideSize(w, h uint32) uint32 {
 
 func (g *drawingContext) BeginPaint(width, height uint32) gkit.Painter {
 	maskSideSize := textureSideSize(width, height)
-	mask := image.NewGray(image.Rectangle{
-		Max: image.Point{int(maskSideSize), int(maskSideSize)},
-	})
-	for x := 0; x < 10; x++ {
-		for y := 0; y < 10; y++ {
-			mask.SetGray(x, y, color.Gray{0xff})
-		}
-	}
+	mask := newBitmap8bpp(int(maskSideSize), int(maskSideSize))
+	mask.data[0] = 0xff
 	return &painter{
 		context:  g,
 		mask:     mask,
@@ -268,15 +257,15 @@ func (g *drawingContext) EndPaint(gkitPainter gkit.Painter) {
 	gl.Uniform1i(g.maskLocation, 0)
 
 	gl.ActiveTexture(gl.TEXTURE0)
-	gl.BindTexture(gl.TEXTURE_2D, g.texture)
-	// defer gl.BindTexture(gl.TEXTURE_2D, 0)
 
+	gl.BindTexture(gl.TEXTURE_2D, g.texture)
+	defer gl.BindTexture(gl.TEXTURE_2D, 0)
 	gl.TexImage2D(
 		gl.TEXTURE_2D, 0, gl.RED, int32(p.mask.Rect.Max.X), int32(p.mask.Rect.Max.Y), 0,
-		gl.RED, gl.UNSIGNED_BYTE, gl.Ptr(p.mask.Pix))
+		gl.RED, gl.UNSIGNED_BYTE, gl.Ptr(p.mask.data))
 
 	gl.BindSampler(0, g.sampler)
-	//defer gl.BindSampler(0, 0)
+	defer gl.BindSampler(0, 0)
 
 	gl.Uniform2ui(g.maskSizeLocation, uint32(p.mask.Rect.Max.X), uint32(p.mask.Rect.Max.Y))
 
