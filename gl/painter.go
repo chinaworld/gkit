@@ -119,7 +119,7 @@ func (p *painter) drawText(x, y, z uint32, text string) {
 	size := p.currentFont.StringSize(p.currentFontSize, text)
 	p.currentFont.DrawString(p.currentFontSize, text, x, y, p.mask)
 
-	left, top, right, bottom, Z := float32(x), float32(y), float32(x+size.Width), float32(x+size.Height), float32(z)
+	left, top, right, bottom, Z := float32(x), float32(y), float32(x+size.Width), float32(y+size.Height), float32(z)
 	R, G, B, A := p.currentColor[0], p.currentColor[1], p.currentColor[2], p.currentColor[3]
 	U, V, W := float32(0), float32(0), float32(-1)
 	p.vertices = append(p.vertices,
