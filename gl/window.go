@@ -23,8 +23,15 @@ func (w *Window) Size() gkit.Size {
 	return w.size
 }
 
-func (w *Window) Root() *gkit.View {
-	return &w.root
+func (w *Window) SetRoot(view gkit.View) {
+	w.root = view
+	if w.root != nil {
+		w.root.SetSize(w.size)
+	}
+}
+
+func (w *Window) Root() gkit.View {
+	return w.root
 }
 
 func (w *Window) glSetup() error {
@@ -55,6 +62,7 @@ func (w *Window) UpdateSize() {
 	viewportSize := make([]int32, 4)
 	gl.GetIntegerv(gl.VIEWPORT, &viewportSize[0])
 	w.size.Width, w.size.Height = uint32(viewportSize[2]), uint32(viewportSize[3])
+	w.root.SetSize(w.size)
 }
 
 func (w *Window) EndPaint(painter gkit.Painter) {
@@ -71,8 +79,4 @@ func (w *Window) Maximize() error {
 
 func (w *Window) ShouldClose() bool {
 	return w.window.ShouldClose()
-}
-
-func (w *Window) Layout() {
-	w.root.Layouter().Layout(gkit.Rect{0, 0, w.size.Width, w.size.Height})
 }

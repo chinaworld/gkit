@@ -8,11 +8,11 @@ type WindowSystem interface {
 
 type Window interface {
 	DrawingContext
-	Root() *View
+	SetRoot(View)
+	Root() View
 	Destroy()
 	UpdateSize()
 	Maximize() error
 	ShouldClose() bool
-	Layout()
 	Size() Size
 }

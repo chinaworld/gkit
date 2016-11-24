@@ -5,7 +5,7 @@ import (
 )
 
 type Label struct {
-	gkit.View
+	gkit.ViewBase
 
 	text     string
 	font     *gkit.Font
@@ -13,15 +13,18 @@ type Label struct {
 	Color    gkit.Color
 }
 
+var _ gkit.View = &Label{}
+
 func NewLabel() *Label {
-	var label Label
-	label.View.Draw = func(v *gkit.View, p gkit.Painter) {
-		label.draw(p)
-	}
+	label := Label{}
+	label.ViewBase.View = &label
 	return &label
 }
 
-func (l *Label) draw(p gkit.Painter) {
+func (l *Label) Layout() {}
+func (l *Label) Update() {}
+
+func (l *Label) Draw(p gkit.Painter) {
 	if l.font == nil || l.fontSize == 0 || l.text == "" {
 		return
 	}
@@ -35,7 +38,7 @@ func (l *Label) SetFont(font *gkit.Font) {
 	oldFont := l.font
 	l.font = font
 	if oldFont != font {
-		l.updateSizes()
+		l.SetPrefSizeChanged()
 	}
 }
 
@@ -43,7 +46,7 @@ func (l *Label) SetFontSize(size uint32) {
 	oldSize := l.fontSize
 	l.fontSize = size
 	if oldSize != size {
-		l.updateSizes()
+		l.SetPrefSizeChanged()
 	}
 }
 
@@ -51,18 +54,17 @@ func (l *Label) SetText(text string) {
 	oldText := l.text
 	l.text = text
 	if oldText != text {
-		l.updateSizes()
+		l.SetPrefSizeChanged()
 	}
 }
 
-func (l *Label) updateSizes() {
+func (l *Label) UpdateSizes() {
 	if l.font == nil || l.fontSize == 0 || l.text == "" {
-		l.View.MinSize = gkit.Size{}
-		l.View.PrefSize = gkit.Size{}
-		l.View.MaxSize = gkit.Size{}
+		l.SetMinSize(gkit.Size{})
+		l.SetPrefSize(gkit.Size{})
+		l.SetMaxSize(gkit.Size{})
 		return
 	}
 	size := l.font.StringSize(l.fontSize, l.text)
-	l.View.MinSize = size
-	l.View.PrefSize = size
+	l.SetPrefSize(size)
 }
