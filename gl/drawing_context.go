@@ -323,10 +323,12 @@ func (g *drawingContext) EndPaint(gkitPainter gkit.Painter) {
 			images = append(images, image.Pix...)
 		}
 	}
-	gl.TexImage3D(
-		gl.TEXTURE_2D_ARRAY, 0, gl.RGBA,
-		int32(p.mask.Rect.Max.X), int32(p.mask.Rect.Max.Y), int32(len(p.images)), 0,
-		gl.RGBA, gl.UNSIGNED_INT_8_8_8_8_REV, gl.Ptr(images))
+	if len(images) > 0 {
+		gl.TexImage3D(
+			gl.TEXTURE_2D_ARRAY, 0, gl.RGBA,
+			int32(p.mask.Rect.Max.X), int32(p.mask.Rect.Max.Y), int32(len(p.images)), 0,
+			gl.RGBA, gl.UNSIGNED_INT_8_8_8_8_REV, gl.Ptr(images))
+	}
 
 	gl.BindSampler(1, g.samplerArray)
 	defer gl.BindSampler(1, 0)

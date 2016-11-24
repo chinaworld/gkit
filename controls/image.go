@@ -52,6 +52,8 @@ func (i *Image) Layout() {}
 func (i *Image) Update() {}
 
 func (i *Image) Draw(p gkit.Painter) {
-	size := i.Size()
-	p.DrawImage(0, 0, size.Width, size.Height, i.image)
+	if i.image != nil {
+		size := i.Size()
+		p.DrawImage(0, 0, size.Width, size.Height, i.image)
+	}
 }
