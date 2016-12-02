@@ -332,6 +332,10 @@ func (g *drawingContext) EndPaint(gkitPainter gkit.Painter) {
 	gl.BindSampler(1, g.samplerArray)
 	defer gl.BindSampler(1, 0)
 
+	gl.Enablei(gl.BLEND, 0)
+	gl.BlendEquationSeparate(gl.FUNC_ADD, gl.FUNC_ADD)
+	gl.BlendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ZERO)
+
 	gl.Uniform2ui(g.maskSizeLocation, uint32(p.mask.Rect.Max.X), uint32(p.mask.Rect.Max.Y))
 
 	gl.DrawArrays(gl.TRIANGLES, 0, int32(len(p.vertices)/8))
