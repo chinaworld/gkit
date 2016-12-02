@@ -32,6 +32,13 @@ func normalizeCoords(r gkit.Rect, max gkit.Size) gkit.Rect {
 	return r
 }
 
+func getFloats(r gkit.Rect, z uint32) (float32, float32, float32, float32, float32) {
+	left, top := r.Point.AsFloats()
+	right, bottom := r.RightBottom().AsFloats()
+	Z := float32(z)
+	return left, top, right, bottom, Z
+}
+
 type painter struct {
 	context *drawingContext
 	width   uint32
@@ -76,9 +83,7 @@ func (p *painter) DrawRect(r gkit.Rect) {
 }
 
 func (p *painter) drawRect(r gkit.Rect, z uint32) {
-	left, top := r.Point.AsFloats()
-	right, bottom := r.RightBottom().AsFloats()
-	Z := float32(z)
+	left, top, right, bottom, Z := getFloats(r, z)
 	R, G, B, A := p.currentColor[0], p.currentColor[1], p.currentColor[2], p.currentColor[3]
 	U, V, W := float32(0), float32(0), float32(-1)
 	p.vertices = append(p.vertices,
@@ -116,9 +121,7 @@ func (p *painter) drawText(o gkit.Point, z uint32, text string) {
 	p.currentFont.DrawString(p.currentFontSize, text, o, p.mask)
 	r := gkit.Rect{o, size}
 
-	left, top := r.Point.AsFloats()
-	right, bottom := r.RightBottom().AsFloats()
-	Z := float32(z)
+	left, top, right, bottom, Z := getFloats(r, z)
 	R, G, B, A := p.currentColor[0], p.currentColor[1], p.currentColor[2], p.currentColor[3]
 	U, V, W := float32(0), float32(0), float32(-1)
 	p.vertices = append(p.vertices,
@@ -142,11 +145,9 @@ func (p *painter) drawImage(r gkit.Rect, z uint32, img image.Image) {
 	})
 	bounds := img.Bounds()
 	draw.Copy(imageCopy, image.Point{}, img, bounds, draw.Over, nil)
+	left, top, right, bottom, Z := getFloats(r, z)
 	W := float32(len(p.images))
 	p.images = append(p.images, imageCopy)
-	left, top := r.Point.AsFloats()
-	right, bottom := r.RightBottom().AsFloats()
-	Z := float32(z)
 	R, G, B, A := p.currentColor[0], p.currentColor[1], p.currentColor[2], p.currentColor[3]
 	U, V := float32(0), float32(0)
 	imageWidth, imageHeight := bounds.Max.X-bounds.Min.X, bounds.Max.Y-bounds.Min.Y
