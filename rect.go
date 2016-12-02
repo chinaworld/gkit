@@ -11,6 +11,10 @@ func (p Point) Offset(p2 Point) Point {
 	return p
 }
 
+func (p Point) AsFloats() (float32, float32) {
+	return float32(p.X), float32(p.Y)
+}
+
 type Size struct {
 	Width  uint32
 	Height uint32
@@ -63,4 +67,8 @@ func (r Rect) Inset(insets SideValues) Rect {
 func (r Rect) Offset(p Point) Rect {
 	r.Point = r.Point.Offset(p)
 	return r
+}
+
+func (r Rect) RightBottom() Point {
+	return Point{r.X + r.Width, r.Y + r.Height}
 }

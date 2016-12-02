@@ -76,7 +76,9 @@ func (p *painter) DrawRect(r gkit.Rect) {
 }
 
 func (p *painter) drawRect(r gkit.Rect, z uint32) {
-	left, top, right, bottom, Z := float32(r.X), float32(r.Y), float32(r.X+r.Width), float32(r.Y+r.Height), float32(z)
+	left, top := r.Point.AsFloats()
+	right, bottom := r.RightBottom().AsFloats()
+	Z := float32(z)
 	R, G, B, A := p.currentColor[0], p.currentColor[1], p.currentColor[2], p.currentColor[3]
 	U, V, W := float32(0), float32(0), float32(-1)
 	p.vertices = append(p.vertices,
@@ -112,8 +114,11 @@ func (p *painter) DrawText(o gkit.Point, text string) {
 func (p *painter) drawText(o gkit.Point, z uint32, text string) {
 	size := p.currentFont.StringSize(p.currentFontSize, text)
 	p.currentFont.DrawString(p.currentFontSize, text, o, p.mask)
+	r := gkit.Rect{o, size}
 
-	left, top, right, bottom, Z := float32(o.X), float32(o.Y), float32(o.X+size.Width), float32(o.Y+size.Height), float32(z)
+	left, top := r.Point.AsFloats()
+	right, bottom := r.RightBottom().AsFloats()
+	Z := float32(z)
 	R, G, B, A := p.currentColor[0], p.currentColor[1], p.currentColor[2], p.currentColor[3]
 	U, V, W := float32(0), float32(0), float32(-1)
 	p.vertices = append(p.vertices,
@@ -139,7 +144,9 @@ func (p *painter) drawImage(r gkit.Rect, z uint32, img image.Image) {
 	draw.Copy(imageCopy, image.Point{}, img, bounds, draw.Over, nil)
 	W := float32(len(p.images))
 	p.images = append(p.images, imageCopy)
-	left, top, right, bottom, Z := float32(r.X), float32(r.Y), float32(r.X+r.Width), float32(r.Y+r.Height), float32(z)
+	left, top := r.Point.AsFloats()
+	right, bottom := r.RightBottom().AsFloats()
+	Z := float32(z)
 	R, G, B, A := p.currentColor[0], p.currentColor[1], p.currentColor[2], p.currentColor[3]
 	U, V := float32(0), float32(0)
 	imageWidth, imageHeight := bounds.Max.X-bounds.Min.X, bounds.Max.Y-bounds.Min.Y
