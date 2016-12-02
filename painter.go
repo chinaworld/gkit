@@ -15,6 +15,6 @@ type Painter interface {
 	DrawRect(r Rect)
 	SetFont(f *Font)
 	SetFontSize(size uint32)
-	DrawText(x, y uint32, text string)
+	DrawText(p Point, text string)
 	DrawImage(r Rect, image image.Image)
 }

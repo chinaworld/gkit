@@ -13,7 +13,7 @@ type glPainterInternal interface {
 	drawRect(r gkit.Rect, z uint32)
 	setFont(font *gkit.Font)
 	setFontSize(size uint32)
-	drawText(x, y, z uint32, text string)
+	drawText(o gkit.Point, z uint32, text string)
 	drawImage(r gkit.Rect, z uint32, image image.Image)
 }
 
@@ -105,15 +105,15 @@ func (p *painter) setFontSize(size uint32) {
 	p.currentFontSize = size
 }
 
-func (p *painter) DrawText(x, y uint32, text string) {
-	p.drawText(x, y, 0, text)
+func (p *painter) DrawText(o gkit.Point, text string) {
+	p.drawText(o, 0, text)
 }
 
-func (p *painter) drawText(x, y, z uint32, text string) {
+func (p *painter) drawText(o gkit.Point, z uint32, text string) {
 	size := p.currentFont.StringSize(p.currentFontSize, text)
-	p.currentFont.DrawString(p.currentFontSize, text, x, y, p.mask)
+	p.currentFont.DrawString(p.currentFontSize, text, o, p.mask)
 
-	left, top, right, bottom, Z := float32(x), float32(y), float32(x+size.Width), float32(y+size.Height), float32(z)
+	left, top, right, bottom, Z := float32(o.X), float32(o.Y), float32(o.X+size.Width), float32(o.Y+size.Height), float32(z)
 	R, G, B, A := p.currentColor[0], p.currentColor[1], p.currentColor[2], p.currentColor[3]
 	U, V, W := float32(0), float32(0), float32(-1)
 	p.vertices = append(p.vertices,

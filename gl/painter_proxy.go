@@ -58,13 +58,13 @@ func (p *painterProxy) setFontSize(size uint32) {
 	p.impl.setFontSize(size)
 }
 
-func (p *painterProxy) DrawText(x, y uint32, text string) {
-	p.drawText(x, y, 0, text)
+func (p *painterProxy) DrawText(o gkit.Point, text string) {
+	p.drawText(o, 0, text)
 }
-func (p *painterProxy) drawText(x, y, z uint32, text string) {
+func (p *painterProxy) drawText(o gkit.Point, z uint32, text string) {
 	r := normalizeCoords(
-		gkit.Rect{Point: gkit.Point{x, y}}, p.frame.Size)
-	p.impl.drawText(r.X+p.frame.X, r.Y+p.frame.Y, z+1, text)
+		gkit.Rect{Point: o}, p.frame.Size)
+	p.impl.drawText(gkit.Point{r.X + p.frame.X, r.Y + p.frame.Y}, z+1, text)
 }
 
 func (p *painterProxy) DrawImage(r gkit.Rect, image image.Image) {

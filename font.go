@@ -66,15 +66,15 @@ func (f *Font) StringSize(size uint32, text string) Size {
 	}
 }
 
-func (f *Font) DrawString(size uint32, text string, x, y uint32, dst draw.Image) {
+func (f *Font) DrawString(size uint32, text string, p Point, dst draw.Image) {
 	drawer := f.drawer(size)
 	metrics := drawer.Face.Metrics()
 
 	drawer.Dst = dst
 	drawer.Src = image.NewUniform(color.Gray{0xff})
 	drawer.Dot = fixed.Point26_6{
-		X: fixed.I(int(x)),
-		Y: fixed.I(int(y)) + metrics.Ascent,
+		X: fixed.I(int(p.X)),
+		Y: fixed.I(int(p.Y)) + metrics.Ascent,
 	}
 	drawer.DrawString(text)
 }
