@@ -24,11 +24,11 @@ func min(a, b uint32) uint32 {
 	return b
 }
 
-func normalizeCoords(r gkit.Rect, maxWidth, maxHeight uint32) gkit.Rect {
-	r.X = min(r.X, maxWidth)
-	r.Y = min(r.Y, maxHeight)
-	r.Width = min(r.Width, maxWidth-r.X)
-	r.Height = min(r.Height, maxHeight-r.Y)
+func normalizeCoords(r gkit.Rect, max gkit.Size) gkit.Rect {
+	r.X = min(r.X, max.Width)
+	r.Y = min(r.Y, max.Height)
+	r.Width = min(r.Width, max.Width-r.X)
+	r.Height = min(r.Height, max.Height-r.Y)
 	return r
 }
 
@@ -51,7 +51,7 @@ var _ gkit.Painter = &painter{}
 var _ glPainterInternal = &painter{}
 
 func (p *painter) SubPainter(r gkit.Rect) gkit.Painter {
-	r = normalizeCoords(r, p.width, p.height)
+	r = normalizeCoords(r, gkit.Size{p.width, p.height})
 	return &painterProxy{
 		impl:  p,
 		frame: r,
