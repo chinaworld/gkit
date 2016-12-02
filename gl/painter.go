@@ -17,21 +17,19 @@ type glPainterInternal interface {
 	drawImage(r gkit.Rect, z uint32, image image.Image)
 }
 
-func normalizeCoords(x, y, width, height, maxWidth, maxHeight uint32) (uint32, uint32, uint32, uint32) {
-	if x > maxWidth {
-		x = maxWidth
+func min(a, b uint32) uint32 {
+	if a < b {
+		return a
 	}
-	if y > maxHeight {
-		y = maxHeight
-	}
-	if x+width > maxWidth {
-		width = maxWidth - x
-	}
-	if y+height > maxHeight {
-		height = maxHeight - y
-	}
+	return b
+}
 
-	return x, y, width, height
+func normalizeCoords(r gkit.Rect, maxWidth, maxHeight uint32) gkit.Rect {
+	r.X = min(r.X, maxWidth)
+	r.Y = min(r.Y, maxHeight)
+	r.Width = min(r.Width, maxWidth-r.X)
+	r.Height = min(r.Height, maxHeight-r.Y)
+	return r
 }
 
 type painter struct {
@@ -53,14 +51,10 @@ var _ gkit.Painter = &painter{}
 var _ glPainterInternal = &painter{}
 
 func (p *painter) SubPainter(r gkit.Rect) gkit.Painter {
-	x, y, width, height := normalizeCoords(
-		r.X, r.Y, r.Width, r.Height, p.width, p.height)
+	r = normalizeCoords(r, p.width, p.height)
 	return &painterProxy{
-		impl: p,
-		frame: gkit.Rect{
-			gkit.Point{x, y},
-			gkit.Size{width, height},
-		},
+		impl:  p,
+		frame: r,
 	}
 }
 
