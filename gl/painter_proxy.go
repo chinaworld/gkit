@@ -24,12 +24,15 @@ func (p *painterProxy) drawRect(r gkit.Rect, z uint32) {
 	p.impl.drawRect(r.Offset(p.frame.Point), z+1)
 }
 
-func (p *painterProxy) SubPainter(r gkit.Rect) gkit.Painter {
+func (p *painterProxy) DrawLayer(r gkit.Rect, l gkit.Layer) {
 	r = normalizeCoords(r, p.frame.Size)
-	return &painterProxy{
+	painter := &painterProxy{
 		impl:  p,
 		frame: r,
 	}
+
+	l.Draw(painter)
+	l.PropagateDraw(painter)
 }
 
 func (p *painterProxy) SetColor(c gkit.Color) {

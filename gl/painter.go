@@ -56,12 +56,15 @@ type painter struct {
 var _ gkit.Painter = &painter{}
 var _ glPainterInternal = &painter{}
 
-func (p *painter) SubPainter(r gkit.Rect) gkit.Painter {
+func (p *painter) DrawLayer(r gkit.Rect, l gkit.Layer) {
 	r = normalizeCoords(r, p.size)
-	return &painterProxy{
+	painter := &painterProxy{
 		impl:  p,
 		frame: r,
 	}
+
+	l.Draw(painter)
+	l.PropagateDraw(painter)
 }
 
 func (p *painter) SetColor(c gkit.Color) {

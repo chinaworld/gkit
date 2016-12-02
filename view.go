@@ -24,7 +24,5 @@ type View interface {
 	PropagateUpdate()
 	Update()
 
-	PropagateDraw(Painter)
-	Draw(Painter)
-	NeedsRedraw() bool
+	Layer
 }

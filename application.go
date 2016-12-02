@@ -58,7 +58,7 @@ func (a *Application) Run() {
 				window.Root().PropagateUpdate()
 				window.Root().PropagateLayout()
 				painter := window.BeginPaint()
-				window.Root().PropagateDraw(painter)
+				painter.DrawLayer(Rect{Size: window.Size()}, window.Root())
 				drawQueue <- struct {
 					drawingContext DrawingContext
 					painter        Painter

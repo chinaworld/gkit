@@ -9,8 +9,14 @@ type DrawingContext interface {
 	EndPaint(painter Painter)
 }
 
+type Layer interface {
+	PropagateDraw(Painter)
+	Draw(Painter)
+	NeedsRedraw() bool
+}
+
 type Painter interface {
-	SubPainter(r Rect) Painter
+	DrawLayer(r Rect, l Layer)
 	SetColor(c Color)
 	DrawRect(r Rect)
 	SetFont(f *Font)
