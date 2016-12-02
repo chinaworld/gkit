@@ -31,7 +31,7 @@ func (l *Label) Draw(p gkit.Painter) {
 	p.SetFont(l.font)
 	p.SetFontSize(l.fontSize)
 	p.SetColor(l.Color)
-	p.DrawText(gkit.Point{}, l.text)
+	p.DrawText(l.Bounds().Point, l.text)
 }
 
 func (l *Label) SetFont(font *gkit.Font) {

@@ -3,7 +3,8 @@ package gkit
 type ViewBase struct {
 	View View
 
-	frame Rect
+	frame   Rect
+	borders SideValues
 
 	children []View
 
@@ -118,6 +119,7 @@ func (v *ViewBase) MaxSize() Size {
 }
 
 func (v *ViewBase) SetPrefSize(size Size) {
+	size = size.Outset(v.borders)
 	if v.prefSize != size {
 		v.prefSize = size
 		v.prefSizeChanged = true
@@ -142,4 +144,16 @@ func (v *ViewBase) NeedsRedraw() bool {
 
 func (v *ViewBase) PrefSizeChanged() bool {
 	return v.prefSizeChanged
+}
+
+func (v *ViewBase) SetBorders(borders SideValues) {
+	v.borders = borders
+}
+
+func (v *ViewBase) Borders() SideValues {
+	return v.borders
+}
+
+func (v *ViewBase) Bounds() Rect {
+	return Rect{Size: v.Size()}.Inset(v.Borders())
 }

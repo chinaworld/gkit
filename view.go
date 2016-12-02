@@ -15,6 +15,9 @@ type View interface {
 	Origin() Point
 	Size() Size
 	UpdateSizes()
+	SetBorders(v SideValues)
+	Borders() SideValues
+	Bounds() Rect
 
 	PropagateLayout()
 	Layout()
