@@ -21,10 +21,7 @@ func (p *painterProxy) DrawRect(r gkit.Rect) {
 
 func (p *painterProxy) drawRect(r gkit.Rect, z uint32) {
 	r = normalizeCoords(r, p.frame.Size)
-	p.impl.drawRect(gkit.Rect{
-		gkit.Point{p.frame.X + r.X, p.frame.Y + r.Y},
-		r.Size,
-	}, z+1)
+	p.impl.drawRect(r.Offset(p.frame.Point), z+1)
 }
 
 func (p *painterProxy) SubPainter(r gkit.Rect) gkit.Painter {
@@ -64,7 +61,7 @@ func (p *painterProxy) DrawText(o gkit.Point, text string) {
 func (p *painterProxy) drawText(o gkit.Point, z uint32, text string) {
 	r := normalizeCoords(
 		gkit.Rect{Point: o}, p.frame.Size)
-	p.impl.drawText(gkit.Point{r.X + p.frame.X, r.Y + p.frame.Y}, z+1, text)
+	p.impl.drawText(r.Point.Offset(p.frame.Point), z+1, text)
 }
 
 func (p *painterProxy) DrawImage(r gkit.Rect, image image.Image) {
@@ -73,8 +70,5 @@ func (p *painterProxy) DrawImage(r gkit.Rect, image image.Image) {
 
 func (p *painterProxy) drawImage(r gkit.Rect, z uint32, image image.Image) {
 	r = normalizeCoords(r, p.frame.Size)
-	p.impl.drawImage(gkit.Rect{
-		gkit.Point{r.X + p.frame.X, r.Y + p.frame.Y},
-		r.Size,
-	}, z+1, image)
+	p.impl.drawImage(r.Offset(p.frame.Point), z+1, image)
 }

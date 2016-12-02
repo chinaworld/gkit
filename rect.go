@@ -5,6 +5,12 @@ type Point struct {
 	Y uint32
 }
 
+func (p Point) Offset(p2 Point) Point {
+	p.X += p2.X
+	p.Y += p2.Y
+	return p
+}
+
 type Size struct {
 	Width  uint32
 	Height uint32
@@ -51,5 +57,10 @@ func (r Rect) Inset(insets SideValues) Rect {
 	r.Y += insets.Top
 	r.Width -= insets.Left + insets.Right
 	r.Height -= insets.Top + insets.Bottom
+	return r
+}
+
+func (r Rect) Offset(p Point) Rect {
+	r.Point = r.Point.Offset(p)
 	return r
 }
