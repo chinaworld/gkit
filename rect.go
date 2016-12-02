@@ -27,10 +27,8 @@ func (s Size) Outset(insets SideValues) Size {
 }
 
 type Rect struct {
-	X      uint32
-	Y      uint32
-	Width  uint32
-	Height uint32
+	Point
+	Size
 }
 
 type SideValues struct {
