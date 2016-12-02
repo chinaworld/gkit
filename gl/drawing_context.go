@@ -246,15 +246,15 @@ func nearestPowerOf2(x uint32) uint32 {
 	return nearestPowerOf2(x>>1) + 1
 }
 
-func textureSideSize(w, h uint32) uint32 {
-	if w > h {
-		return 1 << nearestPowerOf2(w)
+func textureSideSize(s gkit.Size) uint32 {
+	if s.Width > s.Height {
+		return 1 << nearestPowerOf2(s.Width)
 	}
-	return 1 << nearestPowerOf2(h)
+	return 1 << nearestPowerOf2(s.Height)
 }
 
-func (g *drawingContext) BeginPaint(width, height uint32) gkit.Painter {
-	maskSideSize := textureSideSize(width, height)
+func (g *drawingContext) BeginPaint(size gkit.Size) gkit.Painter {
+	maskSideSize := textureSideSize(size)
 	mask := image.NewGray(image.Rectangle{
 		Max: image.Point{int(maskSideSize), int(maskSideSize)},
 	})
@@ -263,8 +263,7 @@ func (g *drawingContext) BeginPaint(width, height uint32) gkit.Painter {
 		context:  g,
 		mask:     mask,
 		images:   make([]*image.RGBA, 0),
-		width:    width,
-		height:   height,
+		size:     size,
 		vertices: make([]float32, 0),
 	}
 }
@@ -278,7 +277,7 @@ func (g *drawingContext) EndPaint(gkitPainter gkit.Painter) {
 	gl.UseProgram(g.program)
 	defer gl.UseProgram(0)
 
-	gl.Uniform4ui(g.viewportSizeLocation, p.width, p.height, 256, 1)
+	gl.Uniform4ui(g.viewportSizeLocation, p.size.Width, p.size.Height, 256, 1)
 
 	gl.BindVertexArray(g.vao)
 	defer gl.BindVertexArray(0)

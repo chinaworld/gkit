@@ -41,8 +41,7 @@ func getFloats(r gkit.Rect, z uint32) (float32, float32, float32, float32, float
 
 type painter struct {
 	context *drawingContext
-	width   uint32
-	height  uint32
+	size    gkit.Size
 
 	mask   *image.Gray
 	images []*image.RGBA
@@ -58,7 +57,7 @@ var _ gkit.Painter = &painter{}
 var _ glPainterInternal = &painter{}
 
 func (p *painter) SubPainter(r gkit.Rect) gkit.Painter {
-	r = normalizeCoords(r, gkit.Size{p.width, p.height})
+	r = normalizeCoords(r, p.size)
 	return &painterProxy{
 		impl:  p,
 		frame: r,
@@ -139,7 +138,7 @@ func (p *painter) DrawImage(r gkit.Rect, img image.Image) {
 }
 
 func (p *painter) drawImage(r gkit.Rect, z uint32, img image.Image) {
-	size := textureSideSize(p.width, p.height)
+	size := textureSideSize(p.size)
 	imageCopy := image.NewRGBA(image.Rectangle{
 		Max: image.Point{int(size), int(size)},
 	})

@@ -55,7 +55,7 @@ func (w *Window) Destroy() {
 }
 
 func (w *Window) BeginPaint() gkit.Painter {
-	return w.drawingContext.BeginPaint(w.size.Width, w.size.Height)
+	return w.drawingContext.BeginPaint(w.size)
 }
 
 func (w *Window) UpdateSize() {
