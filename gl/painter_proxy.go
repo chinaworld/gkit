@@ -9,31 +9,34 @@ import (
 type painterProxy struct {
 	impl glPainterInternal
 
-	x, y, width, height uint32
+	frame gkit.Rect
 }
 
 var _ gkit.Painter = &painterProxy{}
 var _ glPainterInternal = &painterProxy{}
 
-func (p *painterProxy) DrawRect(x, y, width, height uint32) {
-	p.drawRect(x, y, 0, width, height)
+func (p *painterProxy) DrawRect(r gkit.Rect) {
+	p.drawRect(r, 0)
 }
 
-func (p *painterProxy) drawRect(x, y, z, width, height uint32) {
-	x, y, width, height = normalizeCoords(
-		x, y, width, height, p.width, p.height)
-	p.impl.drawRect(p.x+x, p.y+y, z+1, width, height)
+func (p *painterProxy) drawRect(r gkit.Rect, z uint32) {
+	x, y, width, height := normalizeCoords(
+		r.X, r.Y, r.Width, r.Height, p.frame.Width, p.frame.Height)
+	p.impl.drawRect(gkit.Rect{
+		gkit.Point{p.frame.X + x, p.frame.Y + y},
+		gkit.Size{width, height},
+	}, z+1)
 }
 
-func (p *painterProxy) SubPainter(x, y, width, height uint32) gkit.Painter {
-	x, y, width, height = normalizeCoords(
-		x, y, width, height, p.width, p.height)
+func (p *painterProxy) SubPainter(r gkit.Rect) gkit.Painter {
+	x, y, width, height := normalizeCoords(
+		r.X, r.Y, r.Width, r.Height, p.frame.Width, p.frame.Height)
 	return &painterProxy{
-		impl:   p,
-		x:      x,
-		y:      y,
-		width:  width,
-		height: height,
+		impl: p,
+		frame: gkit.Rect{
+			gkit.Point{x, y},
+			gkit.Size{width, height},
+		},
 	}
 }
 
@@ -65,16 +68,19 @@ func (p *painterProxy) DrawText(x, y uint32, text string) {
 }
 func (p *painterProxy) drawText(x, y, z uint32, text string) {
 	x, y, _, _ = normalizeCoords(
-		x, y, 0, 0, p.width, p.height)
-	p.impl.drawText(x+p.x, y+p.y, z+1, text)
+		x, y, 0, 0, p.frame.Width, p.frame.Height)
+	p.impl.drawText(x+p.frame.X, y+p.frame.Y, z+1, text)
 }
 
-func (p *painterProxy) DrawImage(x, y, width, height uint32, image image.Image) {
-	p.drawImage(x, y, 0, width, height, image)
+func (p *painterProxy) DrawImage(r gkit.Rect, image image.Image) {
+	p.drawImage(r, 0, image)
 }
 
-func (p *painterProxy) drawImage(x, y, z, width, height uint32, image image.Image) {
-	x, y, width, height = normalizeCoords(
-		x, y, width, height, p.width, p.height)
-	p.impl.drawImage(x+p.x, y+p.y, z+1, width, height, image)
+func (p *painterProxy) drawImage(r gkit.Rect, z uint32, image image.Image) {
+	x, y, width, height := normalizeCoords(
+		r.X, r.Y, r.Width, r.Height, p.frame.Width, p.frame.Height)
+	p.impl.drawImage(gkit.Rect{
+		gkit.Point{x + p.frame.X, y + p.frame.Y},
+		gkit.Size{width, height},
+	}, z+1, image)
 }

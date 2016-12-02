@@ -10,11 +10,11 @@ import (
 
 type glPainterInternal interface {
 	setColor(c gkit.Color)
-	drawRect(x, y, z, width, height uint32)
+	drawRect(r gkit.Rect, z uint32)
 	setFont(font *gkit.Font)
 	setFontSize(size uint32)
 	drawText(x, y, z uint32, text string)
-	drawImage(x, y, z, width, height uint32, image image.Image)
+	drawImage(r gkit.Rect, z uint32, image image.Image)
 }
 
 func normalizeCoords(x, y, width, height, maxWidth, maxHeight uint32) (uint32, uint32, uint32, uint32) {
@@ -52,15 +52,15 @@ type painter struct {
 var _ gkit.Painter = &painter{}
 var _ glPainterInternal = &painter{}
 
-func (p *painter) SubPainter(x, y, width, height uint32) gkit.Painter {
-	x, y, _, _ = normalizeCoords(
-		x, y, 0, 0, p.width, p.height)
+func (p *painter) SubPainter(r gkit.Rect) gkit.Painter {
+	x, y, width, height := normalizeCoords(
+		r.X, r.Y, r.Width, r.Height, p.width, p.height)
 	return &painterProxy{
-		impl:   p,
-		x:      x,
-		y:      y,
-		width:  width,
-		height: height,
+		impl: p,
+		frame: gkit.Rect{
+			gkit.Point{x, y},
+			gkit.Size{width, height},
+		},
 	}
 }
 
@@ -77,12 +77,12 @@ func (p *painter) setColor(c gkit.Color) {
 	}
 }
 
-func (p *painter) DrawRect(x, y, width, height uint32) {
-	p.drawRect(x, y, 0, width, height)
+func (p *painter) DrawRect(r gkit.Rect) {
+	p.drawRect(r, 0)
 }
 
-func (p *painter) drawRect(x, y, z, width, height uint32) {
-	left, top, right, bottom, Z := float32(x), float32(y), float32(x+width), float32(y+height), float32(z)
+func (p *painter) drawRect(r gkit.Rect, z uint32) {
+	left, top, right, bottom, Z := float32(r.X), float32(r.Y), float32(r.X+r.Width), float32(r.Y+r.Height), float32(z)
 	R, G, B, A := p.currentColor[0], p.currentColor[1], p.currentColor[2], p.currentColor[3]
 	U, V, W := float32(0), float32(0), float32(-1)
 	p.vertices = append(p.vertices,
@@ -132,11 +132,11 @@ func (p *painter) drawText(x, y, z uint32, text string) {
 	)
 }
 
-func (p *painter) DrawImage(x, y, width, height uint32, img image.Image) {
-	p.drawImage(x, y, 0, width, height, img)
+func (p *painter) DrawImage(r gkit.Rect, img image.Image) {
+	p.drawImage(r, 0, img)
 }
 
-func (p *painter) drawImage(x, y, z, width, height uint32, img image.Image) {
+func (p *painter) drawImage(r gkit.Rect, z uint32, img image.Image) {
 	size := textureSideSize(p.width, p.height)
 	imageCopy := image.NewRGBA(image.Rectangle{
 		Max: image.Point{int(size), int(size)},
@@ -145,7 +145,7 @@ func (p *painter) drawImage(x, y, z, width, height uint32, img image.Image) {
 	draw.Copy(imageCopy, image.Point{}, img, bounds, draw.Over, nil)
 	W := float32(len(p.images))
 	p.images = append(p.images, imageCopy)
-	left, top, right, bottom, Z := float32(x), float32(y), float32(x+width), float32(y+height), float32(z)
+	left, top, right, bottom, Z := float32(r.X), float32(r.Y), float32(r.X+r.Width), float32(r.Y+r.Height), float32(z)
 	R, G, B, A := p.currentColor[0], p.currentColor[1], p.currentColor[2], p.currentColor[3]
 	U, V := float32(0), float32(0)
 	imageWidth, imageHeight := bounds.Max.X-bounds.Min.X, bounds.Max.Y-bounds.Min.Y

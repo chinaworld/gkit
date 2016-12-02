@@ -62,9 +62,7 @@ func (v *ViewBase) PropagateDraw(p Painter) {
 	for _, child := range v.children {
 		frame := child.Frame()
 		child.PropagateDraw(
-			p.SubPainter(
-				frame.X, frame.Y,
-				frame.Width, frame.Height))
+			p.SubPainter(frame))
 	}
 	v.needsRedraw = false
 }

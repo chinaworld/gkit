@@ -10,11 +10,11 @@ type DrawingContext interface {
 }
 
 type Painter interface {
-	SubPainter(x, y, width, height uint32) Painter
+	SubPainter(r Rect) Painter
 	SetColor(c Color)
-	DrawRect(x, y, width, height uint32)
+	DrawRect(r Rect)
 	SetFont(f *Font)
 	SetFontSize(size uint32)
 	DrawText(x, y uint32, text string)
-	DrawImage(x, y, width, height uint32, image image.Image)
+	DrawImage(r Rect, image image.Image)
 }
