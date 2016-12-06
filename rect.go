@@ -11,6 +11,12 @@ func (p Point) Offset(p2 Point) Point {
 	return p
 }
 
+func (p Point) Scale(factor float32) Point {
+	p.X = uint32(float32(p.X) * factor)
+	p.Y = uint32(float32(p.Y) * factor)
+	return p
+}
+
 func (p Point) AsFloats() (float32, float32) {
 	return float32(p.X), float32(p.Y)
 }

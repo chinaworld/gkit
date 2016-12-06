@@ -98,6 +98,8 @@ type drawingContext struct {
 	textureArray uint32
 	sampler      uint32
 	samplerArray uint32
+
+	scaleFactor float32
 }
 
 func newDrawingContext() (*drawingContext, error) {
@@ -216,6 +218,7 @@ func newDrawingContext() (*drawingContext, error) {
 		textureArray:         textures[1],
 		sampler:              sampler,
 		samplerArray:         arraySampler,
+		scaleFactor:          1,
 	}, nil
 }
 
@@ -256,15 +259,16 @@ func textureSideSize(s gkit.Size) uint32 {
 func (g *drawingContext) BeginPaint(size gkit.Size) gkit.Painter {
 	maskSideSize := textureSideSize(size)
 	mask := image.NewGray(image.Rectangle{
-		Max: image.Point{int(maskSideSize), int(maskSideSize)},
+		Max: image.Point{int(float32(maskSideSize) * g.scaleFactor), int(float32(maskSideSize) * g.scaleFactor)},
 	})
 	mask.Pix[0] = 0xff
 	return &painter{
-		context:  g,
-		mask:     mask,
-		images:   make([]*image.RGBA, 0),
-		size:     size,
-		vertices: make([]float32, 0),
+		context:     g,
+		mask:        mask,
+		images:      make([]*image.RGBA, 0),
+		size:        size,
+		vertices:    make([]float32, 0),
+		scaleFactor: g.scaleFactor,
 	}
 }
 
@@ -336,7 +340,7 @@ func (g *drawingContext) EndPaint(gkitPainter gkit.Painter) {
 	gl.BlendEquationSeparate(gl.FUNC_ADD, gl.FUNC_ADD)
 	gl.BlendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ZERO)
 
-	gl.Uniform2ui(g.maskSizeLocation, uint32(p.mask.Rect.Max.X), uint32(p.mask.Rect.Max.Y))
+	gl.Uniform2ui(g.maskSizeLocation, uint32(float32(p.mask.Rect.Max.X)/p.scaleFactor), uint32(float32(p.mask.Rect.Max.Y)/p.scaleFactor))
 
 	gl.DrawArrays(gl.TRIANGLES, 0, int32(len(p.vertices)/8))
 }

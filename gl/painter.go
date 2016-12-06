@@ -51,6 +51,8 @@ type painter struct {
 
 	currentFont     *gkit.Font
 	currentFontSize uint32
+
+	scaleFactor float32
 }
 
 var _ gkit.Painter = &painter{}
@@ -119,8 +121,8 @@ func (p *painter) DrawText(o gkit.Point, text string) {
 }
 
 func (p *painter) drawText(o gkit.Point, z uint32, text string) {
-	size := p.currentFont.StringSize(p.currentFontSize, text)
-	p.currentFont.DrawString(p.currentFontSize, text, o, p.mask)
+	size := p.currentFont.StringSize(uint32(float32(p.currentFontSize)*p.scaleFactor), text)
+	p.currentFont.DrawString(uint32(float32(p.currentFontSize)*p.scaleFactor), text, o.Scale(p.scaleFactor), p.mask)
 	r := gkit.Rect{o, size}
 
 	left, top, right, bottom, Z := getFloats(r, z)
@@ -142,6 +144,7 @@ func (p *painter) DrawImage(r gkit.Rect, img image.Image) {
 
 func (p *painter) drawImage(r gkit.Rect, z uint32, img image.Image) {
 	size := textureSideSize(p.size)
+	size = uint32(float32(size) * p.scaleFactor)
 	imageCopy := image.NewRGBA(image.Rectangle{
 		Max: image.Point{int(size), int(size)},
 	})

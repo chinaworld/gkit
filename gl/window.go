@@ -61,7 +61,10 @@ func (w *Window) BeginPaint() gkit.Painter {
 func (w *Window) UpdateSize() {
 	viewportSize := make([]int32, 4)
 	gl.GetIntegerv(gl.VIEWPORT, &viewportSize[0])
-	w.size.Width, w.size.Height = uint32(viewportSize[2]), uint32(viewportSize[3])
+	width, _ := uint32(viewportSize[2]), uint32(viewportSize[3])
+	windowWidth, windowHeight := w.window.GetSize()
+	w.size.Width, w.size.Height = uint32(windowWidth), uint32(windowHeight)
+	w.drawingContext.scaleFactor = float32(width) / float32(w.size.Width)
 	w.root.SetSize(w.size)
 }
 
