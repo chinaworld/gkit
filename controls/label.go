@@ -7,10 +7,11 @@ import (
 type Label struct {
 	gkit.ViewBase
 
-	text     string
-	font     *gkit.Font
-	fontSize uint32
-	Color    gkit.Color
+	text            string
+	font            *gkit.Font
+	fontSize        uint32
+	Color           gkit.Color
+	BackgroundColor gkit.Color
 }
 
 var _ gkit.View = &Label{}
@@ -24,14 +25,24 @@ func NewLabel() *Label {
 func (l *Label) Layout() {}
 func (l *Label) Update() {}
 
+type subLayer struct {
+	*Label
+}
+
+func (s subLayer) Draw(p gkit.Painter) {
+	p.SetFont(s.font)
+	p.SetFontSize(s.fontSize)
+	p.SetColor(s.Color)
+	p.DrawText(gkit.Point{}, s.text)
+}
+
 func (l *Label) Draw(p gkit.Painter) {
 	if l.font == nil || l.fontSize == 0 || l.text == "" {
 		return
 	}
-	p.SetFont(l.font)
-	p.SetFontSize(l.fontSize)
-	p.SetColor(l.Color)
-	p.DrawText(l.Bounds().Point, l.text)
+	p.SetColor(l.BackgroundColor)
+	p.DrawRect(gkit.Rect{Size: l.Size()})
+	p.DrawLayer(l.Bounds(), subLayer{l})
 }
 
 func (l *Label) SetFont(font *gkit.Font) {
@@ -67,4 +78,20 @@ func (l *Label) UpdateSizes() {
 	}
 	size := l.font.StringSize(l.fontSize, l.text)
 	l.SetPrefSize(size)
+}
+
+func (l *Label) SetColor(color gkit.Color) {
+	oldColor := l.Color
+	l.Color = color
+	if l.Color != oldColor {
+		l.SetNeedsRedraw()
+	}
+}
+
+func (l *Label) SetBackgroundColor(color gkit.Color) {
+	oldColor := l.BackgroundColor
+	l.BackgroundColor = color
+	if l.BackgroundColor != oldColor {
+		l.SetNeedsRedraw()
+	}
 }

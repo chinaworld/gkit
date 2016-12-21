@@ -27,12 +27,16 @@ func (v *ViewBase) AddChild(view View) {
 		v.children = make([]View, 0, 10)
 	}
 	v.children = append(v.children, view)
+	v.needsLayout = true
+	v.prefSizeChanged = true
 }
 
 func (v *ViewBase) DeleteChild(view View) {
 	for i, child := range v.children {
 		if child == view {
 			v.children = append(v.children[:i], v.children[i+1:]...)
+			v.needsLayout = true
+			v.prefSizeChanged = true
 			break
 		}
 	}
@@ -45,7 +49,7 @@ func (v *ViewBase) PropagateUpdate() {
 		child.PropagateUpdate()
 		needsUpdateSize = needsUpdateSize || child.PrefSizeChanged()
 	}
-	if v.prefSizeChanged || needsUpdateSize {
+	if v.needsLayout || v.prefSizeChanged || needsUpdateSize {
 		v.View.UpdateSizes()
 	}
 }
@@ -67,9 +71,10 @@ func (v *ViewBase) PropagateDraw(p Painter) {
 }
 
 func (v *ViewBase) PropagateLayout() {
-	if v.needsLayout {
+	if v.needsLayout || v.prefSizeChanged {
 		v.View.Layout()
 		v.needsLayout = false
+		v.prefSizeChanged = true
 	}
 	for _, child := range v.children {
 		child.PropagateLayout()
@@ -98,8 +103,8 @@ func (v *ViewBase) Size() Size {
 }
 
 func (v *ViewBase) SetFrame(frame Rect) {
-	v.SetOrigin(Point{frame.X, frame.Y})
-	v.SetSize(Size{frame.Width, frame.Height})
+	v.SetOrigin(frame.Point)
+	v.SetSize(frame.Size)
 }
 
 func (v *ViewBase) SetMinSize(size Size) {
@@ -138,8 +143,16 @@ func (v *ViewBase) NeedsLayout() bool {
 	return v.needsLayout
 }
 
+func (v *ViewBase) SetNeedsLayout() {
+	v.needsLayout = true
+}
+
 func (v *ViewBase) NeedsRedraw() bool {
 	return v.needsRedraw
+}
+
+func (v *ViewBase) SetNeedsRedraw() {
+	v.needsRedraw = true
 }
 
 func (v *ViewBase) PrefSizeChanged() bool {

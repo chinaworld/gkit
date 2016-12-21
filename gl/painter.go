@@ -121,7 +121,7 @@ func (p *painter) DrawText(o gkit.Point, text string) {
 }
 
 func (p *painter) drawText(o gkit.Point, z uint32, text string) {
-	size := p.currentFont.StringSize(uint32(float32(p.currentFontSize)*p.scaleFactor), text)
+	size := p.currentFont.StringSize(p.currentFontSize, text)
 	p.currentFont.DrawString(uint32(float32(p.currentFontSize)*p.scaleFactor), text, o.Scale(p.scaleFactor), p.mask)
 	r := gkit.Rect{o, size}
 
