@@ -40,6 +40,8 @@ func getFloats(r gkit.Rect, z uint32) (float32, float32, float32, float32, float
 	return left, top, right, bottom, Z
 }
 
+type instruction func(*painter)
+
 type painter struct {
 	context *drawingContext
 	size    gkit.Size
@@ -55,6 +57,8 @@ type painter struct {
 
 	scaleFactor float32
 	doRedraw    bool
+
+	instructions []instruction
 }
 
 var _ gkit.Painter = &painter{}
@@ -72,6 +76,12 @@ func (p *painter) DrawLayer(r gkit.Rect, l gkit.Layer) {
 	}
 	l.Draw(painter)
 	l.PropagateDraw(painter)
+	if p.doRedraw {
+		for _, i := range p.instructions {
+			i(p)
+		}
+		p.instructions = p.instructions[0:0]
+	}
 }
 
 func (p *painter) enableRedraw() {
@@ -96,17 +106,19 @@ func (p *painter) DrawRect(r gkit.Rect) {
 }
 
 func (p *painter) drawRect(r gkit.Rect, z uint32) {
-	left, top, right, bottom, Z := getFloats(r, z)
 	R, G, B, A := p.currentColor[0], p.currentColor[1], p.currentColor[2], p.currentColor[3]
-	U, V, W := float32(0), float32(0), float32(-1)
-	p.vertices = append(p.vertices,
-		left, top, Z, R, G, B, A, U, V, U, V, W,
-		right, top, Z, R, G, B, A, U, V, U, V, W,
-		left, bottom, Z, R, G, B, A, U, V, U, V, W,
-		right, top, Z, R, G, B, A, U, V, U, V, W,
-		right, bottom, Z, R, G, B, A, U, V, U, V, W,
-		left, bottom, Z, R, G, B, A, U, V, U, V, W,
-	)
+	p.addInstruction(func(p *painter) {
+		left, top, right, bottom, Z := getFloats(r, z)
+		U, V, W := float32(0), float32(0), float32(-1)
+		p.vertices = append(p.vertices,
+			left, top, Z, R, G, B, A, U, V, U, V, W,
+			right, top, Z, R, G, B, A, U, V, U, V, W,
+			left, bottom, Z, R, G, B, A, U, V, U, V, W,
+			right, top, Z, R, G, B, A, U, V, U, V, W,
+			right, bottom, Z, R, G, B, A, U, V, U, V, W,
+			left, bottom, Z, R, G, B, A, U, V, U, V, W,
+		)
+	})
 }
 
 func (p *painter) SetFont(font *gkit.Font) {
@@ -130,21 +142,25 @@ func (p *painter) DrawText(o gkit.Point, text string) {
 }
 
 func (p *painter) drawText(o gkit.Point, z uint32, text string) {
-	size := p.currentFont.StringSize(p.currentFontSize, text)
-	p.currentFont.DrawString(uint32(float32(p.currentFontSize)*p.scaleFactor), text, o.Scale(p.scaleFactor), p.mask)
-	r := gkit.Rect{o, size}
-
-	left, top, right, bottom, Z := getFloats(r, z)
+	font := p.currentFont
+	fontSize := p.currentFontSize
 	R, G, B, A := p.currentColor[0], p.currentColor[1], p.currentColor[2], p.currentColor[3]
-	U, V, W := float32(0), float32(0), float32(-1)
-	p.vertices = append(p.vertices,
-		left, top, Z, R, G, B, A, left, top, U, V, W,
-		right, top, Z, R, G, B, A, right, top, U, V, W,
-		left, bottom, Z, R, G, B, A, left, bottom, U, V, W,
-		right, top, Z, R, G, B, A, right, top, U, V, W,
-		right, bottom, Z, R, G, B, A, right, bottom, U, V, W,
-		left, bottom, Z, R, G, B, A, left, bottom, U, V, W,
-	)
+	p.addInstruction(func(p *painter) {
+		size := font.StringSize(fontSize, text)
+		font.DrawString(uint32(float32(fontSize)*p.scaleFactor), text, o.Scale(p.scaleFactor), p.mask)
+		r := gkit.Rect{o, size}
+
+		left, top, right, bottom, Z := getFloats(r, z)
+		U, V, W := float32(0), float32(0), float32(-1)
+		p.vertices = append(p.vertices,
+			left, top, Z, R, G, B, A, left, top, U, V, W,
+			right, top, Z, R, G, B, A, right, top, U, V, W,
+			left, bottom, Z, R, G, B, A, left, bottom, U, V, W,
+			right, top, Z, R, G, B, A, right, top, U, V, W,
+			right, bottom, Z, R, G, B, A, right, bottom, U, V, W,
+			left, bottom, Z, R, G, B, A, left, bottom, U, V, W,
+		)
+	})
 }
 
 func (p *painter) DrawImage(r gkit.Rect, img image.Image) {
@@ -152,26 +168,32 @@ func (p *painter) DrawImage(r gkit.Rect, img image.Image) {
 }
 
 func (p *painter) drawImage(r gkit.Rect, z uint32, img image.Image) {
-	size := textureSideSize(p.size)
-	size = uint32(float32(size) * p.scaleFactor)
-	imageCopy := image.NewRGBA(image.Rectangle{
-		Max: image.Point{int(size), int(size)},
-	})
-	bounds := img.Bounds()
-	draw.Copy(imageCopy, image.Point{}, img, bounds, draw.Over, nil)
-	left, top, right, bottom, Z := getFloats(r, z)
-	W := float32(len(p.images))
-	p.images = append(p.images, imageCopy)
 	R, G, B, A := p.currentColor[0], p.currentColor[1], p.currentColor[2], p.currentColor[3]
-	U, V := float32(0), float32(0)
-	imageWidth, imageHeight := bounds.Max.X-bounds.Min.X, bounds.Max.Y-bounds.Min.Y
-	uvLeft, uvTop, uvRight, uvBottom := float32(0), float32(0), float32(imageWidth)/float32(size), float32(imageHeight)/float32(size)
-	p.vertices = append(p.vertices,
-		left, top, Z, R, G, B, A, U, V, uvLeft, uvTop, W,
-		right, top, Z, R, G, B, A, U, V, uvRight, uvTop, W,
-		left, bottom, Z, R, G, B, A, U, V, uvLeft, uvBottom, W,
-		right, top, Z, R, G, B, A, U, V, uvRight, uvTop, W,
-		right, bottom, Z, R, G, B, A, U, V, uvRight, uvBottom, W,
-		left, bottom, Z, R, G, B, A, U, V, uvLeft, uvBottom, W,
-	)
+	p.addInstruction(func(p *painter) {
+		size := textureSideSize(p.size)
+		size = uint32(float32(size) * p.scaleFactor)
+		imageCopy := image.NewRGBA(image.Rectangle{
+			Max: image.Point{int(size), int(size)},
+		})
+		bounds := img.Bounds()
+		draw.Copy(imageCopy, image.Point{}, img, bounds, draw.Over, nil)
+		left, top, right, bottom, Z := getFloats(r, z)
+		W := float32(len(p.images))
+		p.images = append(p.images, imageCopy)
+		U, V := float32(0), float32(0)
+		imageWidth, imageHeight := bounds.Max.X-bounds.Min.X, bounds.Max.Y-bounds.Min.Y
+		uvLeft, uvTop, uvRight, uvBottom := float32(0), float32(0), float32(imageWidth)/float32(size), float32(imageHeight)/float32(size)
+		p.vertices = append(p.vertices,
+			left, top, Z, R, G, B, A, U, V, uvLeft, uvTop, W,
+			right, top, Z, R, G, B, A, U, V, uvRight, uvTop, W,
+			left, bottom, Z, R, G, B, A, U, V, uvLeft, uvBottom, W,
+			right, top, Z, R, G, B, A, U, V, uvRight, uvTop, W,
+			right, bottom, Z, R, G, B, A, U, V, uvRight, uvBottom, W,
+			left, bottom, Z, R, G, B, A, U, V, uvLeft, uvBottom, W,
+		)
+	})
+}
+
+func (p *painter) addInstruction(i instruction) {
+	p.instructions = append(p.instructions, i)
 }

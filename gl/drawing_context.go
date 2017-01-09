@@ -263,12 +263,13 @@ func (g *drawingContext) BeginPaint(size gkit.Size) gkit.Painter {
 	})
 	mask.Pix[0] = 0xff
 	return &painter{
-		context:     g,
-		mask:        mask,
-		images:      make([]*image.RGBA, 0),
-		size:        size,
-		vertices:    make([]float32, 0),
-		scaleFactor: g.scaleFactor,
+		context:      g,
+		mask:         mask,
+		images:       make([]*image.RGBA, 0),
+		size:         size,
+		vertices:     make([]float32, 0),
+		scaleFactor:  g.scaleFactor,
+		instructions: make([]instruction, 0),
 	}
 }
 
