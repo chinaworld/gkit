@@ -75,3 +75,7 @@ func (p *painterProxy) drawImage(r gkit.Rect, z uint32, image image.Image) {
 	r = normalizeCoords(r, p.frame.Size)
 	p.impl.drawImage(r.Offset(p.frame.Point), z+1, image)
 }
+
+func (p *painterProxy) enableRedraw() {
+	p.impl.enableRedraw()
+}

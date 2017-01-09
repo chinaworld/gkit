@@ -69,6 +69,10 @@ func (l *Label) SetText(text string) {
 	}
 }
 
+func (l *Label) Text() string {
+	return l.text
+}
+
 func (l *Label) UpdateSizes() {
 	if l.font == nil || l.fontSize == 0 || l.text == "" {
 		l.SetMinSize(gkit.Size{})

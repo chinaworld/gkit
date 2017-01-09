@@ -274,6 +274,10 @@ func (g *drawingContext) BeginPaint(size gkit.Size) gkit.Painter {
 
 func (g *drawingContext) EndPaint(gkitPainter gkit.Painter) {
 	p := gkitPainter.(*painter)
+	if !p.doRedraw {
+		return
+	}
+	gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 	if len(p.vertices) == 0 {
 		return
 	}

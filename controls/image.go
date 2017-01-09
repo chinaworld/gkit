@@ -35,6 +35,7 @@ func (i *Image) SetImage(img image.Image) {
 	if width != newWidth || height != newHeight {
 		i.SetPrefSize(gkit.Size{uint32(newWidth), uint32(newHeight)})
 	}
+	i.SetNeedsRedraw()
 }
 
 func (i *Image) UpdateSizes() {

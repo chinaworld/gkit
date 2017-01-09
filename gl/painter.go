@@ -15,6 +15,7 @@ type glPainterInternal interface {
 	setFontSize(size uint32)
 	drawText(o gkit.Point, z uint32, text string)
 	drawImage(r gkit.Rect, z uint32, image image.Image)
+	enableRedraw()
 }
 
 func min(a, b uint32) uint32 {
@@ -53,6 +54,7 @@ type painter struct {
 	currentFontSize uint32
 
 	scaleFactor float32
+	doRedraw    bool
 }
 
 var _ gkit.Painter = &painter{}
@@ -65,8 +67,15 @@ func (p *painter) DrawLayer(r gkit.Rect, l gkit.Layer) {
 		frame: r,
 	}
 
+	if l.NeedsRedraw() {
+		p.enableRedraw()
+	}
 	l.Draw(painter)
 	l.PropagateDraw(painter)
+}
+
+func (p *painter) enableRedraw() {
+	p.doRedraw = true
 }
 
 func (p *painter) SetColor(c gkit.Color) {

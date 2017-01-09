@@ -68,12 +68,13 @@ func (w *Window) UpdateSize() {
 	w.root.SetSize(w.size)
 }
 
-func (w *Window) EndPaint(painter gkit.Painter) {
+func (w *Window) EndPaint(p gkit.Painter) {
 	w.window.MakeContextCurrent()
-	gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
-	defer w.window.SwapBuffers()
-	w.drawingContext.EndPaint(painter)
+	w.drawingContext.EndPaint(p)
+	if p.(*painter).doRedraw {
+		w.window.SwapBuffers()
+	}
 }
 
 func (w *Window) Maximize() error {
