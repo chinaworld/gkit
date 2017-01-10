@@ -68,8 +68,12 @@ func (s *WindowSystem) Create(w, h uint32, title string) (gkit.Window, error) {
 	return window, nil
 }
 
-func (s *WindowSystem) PollEvents() {
-	glfw.PollEvents()
+func (s *WindowSystem) WaitEvents() {
+	glfw.WaitEvents()
+}
+
+func (s *WindowSystem) Interrupt() {
+	glfw.PostEmptyEvent()
 }
 
 func (s *WindowSystem) Terminate() {

@@ -31,7 +31,7 @@ func (a *Application) Shutdown() {
 
 func (a *Application) Run() {
 	for len(a.windows) > 0 {
-		a.windowSystem.PollEvents()
+		a.windowSystem.WaitEvents()
 		shouldCleanUp := false
 		for _, window := range a.windows {
 			shouldCleanUp = shouldCleanUp || window.ShouldClose()
@@ -77,4 +77,8 @@ func (a *Application) Run() {
 		}
 		close(drawQueue)
 	}
+}
+
+func (a *Application) Interrupt() {
+	a.windowSystem.Interrupt()
 }

@@ -66,6 +66,7 @@ func (l *Label) SetText(text string) {
 	l.text = text
 	if oldText != text {
 		l.SetPrefSizeChanged()
+		l.SetNeedsRedraw()
 	}
 }
 

@@ -2,7 +2,8 @@ package gkit
 
 type WindowSystem interface {
 	Create(width, height uint32, title string) (Window, error)
-	PollEvents()
+	WaitEvents()
+	Interrupt()
 	Terminate()
 }
 
