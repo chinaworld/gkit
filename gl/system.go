@@ -1,6 +1,8 @@
 package gl
 
 import (
+	"time"
+
 	"github.com/go-gl/gl/v3.2-core/gl"
 	"github.com/go-gl/glfw/v3.2/glfw"
 
@@ -26,11 +28,14 @@ func NewWindowSystem() (gkit.WindowSystem, error) {
 	glfw.WindowHint(glfw.OpenGLForwardCompatible, glfw.True)
 
 	ok = true
-	return &WindowSystem{}, nil
+	return &WindowSystem{
+		stopWait: make(chan struct{}),
+	}, nil
 }
 
 type WindowSystem struct {
 	glInited bool
+	stopWait chan struct{}
 }
 
 var _ gkit.WindowSystem = &WindowSystem{}
@@ -69,11 +74,16 @@ func (s *WindowSystem) Create(w, h uint32, title string) (gkit.Window, error) {
 }
 
 func (s *WindowSystem) WaitEvents() {
-	glfw.WaitEvents()
+	select {
+	case <-s.stopWait:
+		return
+	case <-time.After(1 * time.Second / 60):
+		glfw.PollEvents()
+	}
 }
 
 func (s *WindowSystem) Interrupt() {
-	glfw.PostEmptyEvent()
+	s.stopWait <- struct{}{}
 }
 
 func (s *WindowSystem) Terminate() {
